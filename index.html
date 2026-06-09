@@ -1012,6 +1012,8 @@ function toggleJudge(){
     last.resultType=nowCorrect?(isPow?'p15':'g10'):(last.typed?'m5':'dead');
     last.pts=nowCorrect?(isPow?'+15 POWER':'+10'):'-5';
     try{dbPut('plog',last);}catch(e){}
+    // Re-render plog if it's currently visible
+    if(document.getElementById('panel-log').classList.contains('active'))renderPlog();
   }
 }
 
