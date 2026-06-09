@@ -442,15 +442,19 @@ input[type=number]:focus,input[type=text]:focus{border-color:var(--accent);}
   <div class="plog-toolbar">
     <input type="text" class="plog-search" id="plogSearch" placeholder="Search by answer, tournament, category..." oninput="renderPlog()">
     <span class="plog-count" id="plogCount"></span>
+    <button class="tool-btn" style="border-color:var(--red);color:var(--red);" onclick="confirmClearPlog()">🗑 Clear All Tossups</button>
   </div>
   <div id="plogList"></div>
 </div>
 
 <!-- STATS -->
 <div class="panel" id="panel-stats">
-  <div class="stats-tabs" id="statsTabs">
-    <div class="stats-tab active" onclick="switchStatsTab('category',this)">By Category</div>
-    <div class="stats-tab" onclick="switchStatsTab('subcategory',this)">By Subcategory</div>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+    <div class="stats-tabs" id="statsTabs">
+      <div class="stats-tab active" onclick="switchStatsTab('category',this)">By Category</div>
+      <div class="stats-tab" onclick="switchStatsTab('subcategory',this)">By Subcategory</div>
+    </div>
+    <button class="tool-btn" style="border-color:var(--red);color:var(--red);" onclick="confirmClearStats()">🗑 Clear All Stats</button>
   </div>
   <div class="stats-panel-wrap active" id="sp-category">
     <div class="stats-card">
@@ -1387,6 +1391,8 @@ async function confirmYes(){
   const p=pendingConfirm;pendingConfirm=null;
   if(p.type==='ans')await _doDeleteAns(p.sub,p.ans);
   if(p.type==='sub')await _doDeleteSub(p.sub);
+  if(p.type==='clearStats')await _doClearStats();
+  if(p.type==='clearPlog')await _doClearPlog();
 }
 
 // ── CLUES TAB ────────────────────────────────────────────────────
@@ -1856,6 +1862,28 @@ function openAddCluePopupFromPlog(ev,sent,idx){
   document.getElementById('dupWarning').classList.remove('visible');
   checkDupWarning();
   document.getElementById('addClueOverlay').classList.add('open');
+}
+function confirmClearStats(){
+  pendingConfirm={type:'clearStats'};
+  showConfirm('Clear All Stats?','This will permanently delete all session history and stat data. Cannot be undone.','Clear All');
+}
+function confirmClearPlog(){
+  pendingConfirm={type:'clearPlog'};
+  showConfirm('Clear All Tossups?','This will permanently delete every saved tossup from your Packet Log. Cannot be undone.','Clear All');
+}
+async function _doClearStats(){
+  statsResults=[];
+  const all=await dbGetAll('results');
+  for(const r of all)await dbDelete('results',r.id);
+  renderStats();
+  showToast('Stats cleared.');
+}
+async function _doClearPlog(){
+  plogEntries=[];
+  const all=await dbGetAll('plog');
+  for(const r of all)await dbDelete('plog',r.id);
+  renderPlog();
+  showToast('Packet log cleared.');
 }
 </script>
 </body>
