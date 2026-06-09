@@ -1004,8 +1004,14 @@ function toggleJudge(){
     const newPtsVal=nowCorrect?(isPow?15:10):-5;
     last.rt=newRt;
     last.pts=newPtsVal;
-    // Persist the update
     try{dbPut('results',last);}catch(e){}
+  }
+  // Patch the most recent plog entry too
+  if(plogEntries.length){
+    const last=plogEntries[0];
+    last.resultType=nowCorrect?(isPow?'p15':'g10'):(last.typed?'m5':'dead');
+    last.pts=nowCorrect?(isPow?'+15 POWER':'+10'):'-5';
+    try{dbPut('plog',last);}catch(e){}
   }
 }
 
