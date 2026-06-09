@@ -1,0 +1,1854 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QBAtlas</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0f1117;--bg2:#1a1d27;--bg3:#22263a;--border:#2e3347;--text:#e8eaf0;--text2:#8b90a8;--accent:#4f8ef7;--red:#e05555;--green:#4caf7d;--yellow:#f0c040;--orange:#f07840;--font:'IBM Plex Sans',sans-serif;--mono:'IBM Plex Mono',monospace;}
+[data-theme="light"]{--bg:#f4f6fb;--bg2:#fff;--bg3:#e8ecf5;--border:#d0d5e8;--text:#1a1d2e;--text2:#6b7190;--accent:#2563eb;--red:#dc2626;--green:#16a34a;--yellow:#d97706;--orange:#ea580c;}
+[data-theme="og"]{--bg:#0d1b2e;--bg2:#1f3a5f;--bg3:#162d4a;--border:#2e5080;--text:#fff;--text2:#93b4d4;--accent:#2e75b6;--red:#c00000;--green:#375623;--yellow:#f0c040;--orange:#f07840;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;transition:background .2s,color .2s;}
+nav{display:flex;align-items:center;background:var(--bg2);border-bottom:1px solid var(--border);padding:0 24px;height:52px;position:sticky;top:0;z-index:100;}
+.nav-logo{font-family:var(--mono);font-weight:600;font-size:15px;color:var(--accent);margin-right:32px;letter-spacing:.05em;}
+.nav-tabs{display:flex;flex:1;}
+.nav-tab{padding:0 20px;height:52px;display:flex;align-items:center;font-size:13px;font-weight:500;color:var(--text2);cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap;}
+.nav-tab:hover{color:var(--text);}
+.nav-tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+.nav-right{display:flex;align-items:center;gap:8px;margin-left:auto;}
+.theme-btn{padding:5px 10px;border-radius:6px;border:1px solid var(--border);background:var(--bg3);color:var(--text2);font-size:11px;cursor:pointer;font-family:var(--mono);transition:all .15s;}
+.theme-btn:hover,.theme-btn.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+.panel{display:none;padding:24px;max-width:1100px;margin:0 auto;}
+.panel.active{display:block;}
+
+.reader-controls{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:14px;}
+.ctrl-group{display:flex;flex-direction:column;gap:5px;}
+.ctrl-label{font-size:11px;color:var(--text2);font-family:var(--mono);text-transform:uppercase;letter-spacing:.05em;}
+.multi-select-container{position:relative;}
+.multi-select-btn{background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:6px;font-size:13px;padding:6px 10px;cursor:pointer;min-width:160px;display:flex;justify-content:space-between;align-items:center;gap:8px;white-space:nowrap;transition:border-color .15s;}
+.multi-select-btn:hover{border-color:var(--accent);}
+.multi-dropdown{position:absolute;top:calc(100% + 4px);left:0;z-index:300;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:6px;min-width:210px;display:none;box-shadow:0 8px 24px rgba(0,0,0,.35);}
+.multi-dropdown.open{display:block;}
+.multi-option{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:5px;cursor:pointer;font-size:13px;transition:background .1s;}
+.multi-option:hover{background:var(--bg3);}
+.multi-option input{accent-color:var(--accent);cursor:pointer;}
+input[type=range]{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:6px 10px;outline:none;width:140px;cursor:pointer;}
+input[type=number],input[type=text]{background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:6px;font-family:var(--font);font-size:13px;padding:6px 10px;outline:none;transition:border-color .15s;}
+input[type=number]:focus,input[type=text]:focus{border-color:var(--accent);}
+.wpm-val{font-family:var(--mono);font-size:12px;color:var(--accent);}
+.year-inputs{display:flex;align-items:center;gap:6px;}
+.year-input{width:72px;}
+.toggle-switch{position:relative;width:36px;height:20px;cursor:pointer;flex-shrink:0;}
+.toggle-switch input{opacity:0;width:0;height:0;}
+.toggle-slider{position:absolute;inset:0;background:var(--bg3);border:1px solid var(--border);border-radius:20px;transition:.2s;}
+.toggle-slider:before{content:'';position:absolute;width:14px;height:14px;left:2px;top:2px;background:var(--text2);border-radius:50%;transition:.2s;}
+.toggle-switch input:checked+.toggle-slider{background:var(--accent);border-color:var(--accent);}
+.toggle-switch input:checked+.toggle-slider:before{transform:translateX(16px);background:#fff;}
+.toggle-row{display:flex;align-items:center;gap:8px;}
+
+.score-bar{display:flex;flex-wrap:wrap;align-items:stretch;background:var(--bg2);border:1px solid var(--border);border-radius:10px;margin-bottom:14px;overflow:hidden;}
+.score-item{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 18px;gap:2px;border-right:1px solid var(--border);}
+.score-item:last-child{border-right:none;flex:1;}
+.score-val{font-size:20px;font-weight:700;font-family:var(--mono);}
+.score-lbl{font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;}
+.s-pow{color:var(--yellow);}
+.s-get{color:var(--green);}
+.s-neg{color:var(--red);}
+.s-cel{color:var(--accent);}
+.s-tot{color:var(--yellow);font-size:24px;}
+
+.kb-hints{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px;}
+.kb-hint{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2);}
+.kb-key{display:inline-flex;align-items:center;justify-content:center;background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:2px 7px;font-family:var(--mono);font-size:11px;color:var(--text);min-width:28px;}
+
+.question-box{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:20px;margin-bottom:14px;min-height:140px;}
+.q-meta{font-size:11px;color:var(--text2);font-family:var(--mono);margin-bottom:10px;display:flex;gap:14px;flex-wrap:wrap;}
+.q-status{margin-bottom:8px;font-size:13px;color:var(--text2);min-height:18px;font-family:var(--mono);}
+.q-status .ready{color:var(--accent);}
+.q-text{font-size:15px;line-height:1.95;min-height:60px;}
+.w-read{color:var(--text);}
+.w-hidden{visibility:hidden;}
+.sent-hl{background:rgba(224,85,85,.16);border-radius:3px;padding:1px 2px;}
+.clue-ul{text-decoration:underline;text-decoration-color:var(--red);text-underline-offset:3px;font-weight:600;color:var(--red);}
+.power-w{color:var(--yellow);font-weight:700;}
+.buzz-mark{color:var(--orange);font-weight:700;font-family:var(--mono);}
+.answerline{margin-top:10px;font-size:13px;color:var(--text2);font-family:var(--mono);display:none;}
+.answerline span{color:var(--text);font-weight:600;}
+
+.timer-bar-wrap{display:none;margin-bottom:10px;}
+.timer-bar-wrap.visible{display:block;}
+.timer-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;}
+.timer-label{font-size:11px;color:var(--text2);font-family:var(--mono);text-transform:uppercase;letter-spacing:.05em;}
+.timer-countdown{font-family:var(--mono);font-size:15px;font-weight:700;color:var(--accent);}
+.timer-track{height:4px;background:var(--bg3);border-radius:2px;}
+.timer-fill{height:4px;background:var(--accent);border-radius:2px;transition:width .05s linear,background .3s;}
+
+.buzz-area{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:14px;display:none;}
+.buzz-area.visible{display:block;}
+.buzz-lbl{font-size:11px;color:var(--text2);font-family:var(--mono);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;}
+.buzz-input{width:100%;background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:7px;font-size:15px;padding:10px 14px;outline:none;font-family:var(--font);transition:border-color .15s;}
+.buzz-input:focus{border-color:var(--accent);}
+
+.result-row{display:none;margin-top:10px;align-items:center;gap:10px;flex-wrap:wrap;}
+.result-row.visible{display:flex;}
+.result-badge{padding:4px 12px;border-radius:6px;font-family:var(--mono);font-size:13px;font-weight:700;}
+.rb-pow{background:rgba(240,192,64,.18);color:var(--yellow);}
+.rb-cor{background:rgba(76,175,125,.18);color:var(--green);}
+.rb-inc{background:rgba(224,85,85,.18);color:var(--red);}
+.rb-dead{background:rgba(139,144,168,.18);color:var(--text2);}
+.typed-ans{font-size:13px;color:var(--text2);font-family:var(--mono);}
+.typed-ans span{color:var(--text);}
+.toggle-judge-btn{padding:6px 14px;border-radius:6px;border:1px solid;font-size:12px;cursor:pointer;font-family:var(--font);background:transparent;transition:all .15s;}
+
+.add-clue-btn{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:var(--accent);color:#fff;font-size:11px;cursor:pointer;margin-left:5px;border:none;font-family:var(--mono);line-height:1;vertical-align:middle;opacity:.75;transition:all .15s;}
+.add-clue-btn:hover{opacity:1;}
+.add-clue-btn.added{background:var(--green);opacity:1;}
+
+.log-section{margin-top:22px;}
+.log-title{font-size:11px;color:var(--text2);font-family:var(--mono);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;}
+.log-item{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:12px 16px;margin-bottom:8px;cursor:pointer;transition:border-color .15s;}
+.log-item:hover{border-color:var(--accent);}
+.log-header{display:flex;justify-content:space-between;align-items:center;gap:8px;}
+.log-answer{font-weight:600;font-size:14px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.log-right{display:flex;gap:8px;align-items:center;flex-shrink:0;}
+.log-meta-row{font-size:11px;color:var(--text2);font-family:var(--mono);}
+.log-badge{padding:2px 8px;border-radius:4px;font-size:11px;font-family:var(--mono);font-weight:600;}
+.lb-p{background:rgba(240,192,64,.18);color:var(--yellow);}
+.lb-c{background:rgba(76,175,125,.18);color:var(--green);}
+.lb-w{background:rgba(224,85,85,.18);color:var(--red);}
+.lb-d{background:rgba(139,144,168,.18);color:var(--text2);}
+.log-expand{display:none;margin-top:12px;border-top:1px solid var(--border);padding-top:12px;}
+.log-expand.open{display:block;}
+.log-q-text{font-size:13px;line-height:1.9;}
+.log-detail{margin-top:8px;font-size:12px;color:var(--text2);font-family:var(--mono);display:flex;flex-wrap:wrap;gap:12px;}
+.log-detail span{display:flex;flex-direction:column;gap:2px;}
+.log-detail .ld-label{font-size:10px;text-transform:uppercase;letter-spacing:.05em;}
+.log-detail .ld-val{color:var(--text);}
+.log-al{margin-top:8px;font-size:12px;color:var(--text2);font-family:var(--mono);}
+.log-al span{color:var(--text);font-weight:600;}
+.log-typed{margin-top:5px;font-size:12px;font-family:var(--mono);color:var(--text2);}
+.log-typed span{color:var(--text);}
+
+.popup-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:400;display:none;align-items:center;justify-content:center;}
+.popup-overlay.open{display:flex;}
+.popup-box{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:22px;max-width:540px;width:92%;}
+.popup-title{font-size:14px;font-weight:700;margin-bottom:14px;}
+.popup-sent{font-size:12px;color:var(--text2);background:var(--bg3);border-radius:6px;padding:8px 12px;margin-bottom:14px;line-height:1.6;font-family:var(--mono);}
+.popup-option{display:flex;align-items:flex-start;gap:10px;padding:10px;border:1px solid var(--border);border-radius:8px;cursor:pointer;margin-bottom:8px;transition:border-color .15s;}
+.popup-option:hover{border-color:var(--accent);}
+.popup-radio{width:16px;height:16px;accent-color:var(--accent);margin-top:2px;flex-shrink:0;cursor:pointer;}
+.popup-opt-label{font-size:13px;font-weight:600;margin-bottom:2px;}
+.popup-opt-sub{font-size:12px;color:var(--text2);}
+.popup-input{width:100%;background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:6px;font-size:13px;padding:8px 12px;outline:none;font-family:var(--font);margin-top:6px;transition:border-color .15s;}
+.popup-input:focus{border-color:var(--accent);}
+.popup-field{margin-bottom:12px;}
+.popup-field-label{font-size:11px;color:var(--text2);font-family:var(--mono);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px;}
+.popup-btns{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;}
+.popup-confirm{flex:1;padding:10px;background:var(--accent);color:#fff;border:none;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font);}
+.popup-cancel{padding:10px 16px;background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:7px;font-size:13px;cursor:pointer;font-family:var(--font);}
+.popup-delete{padding:10px 16px;background:rgba(224,85,85,.12);border:1px solid var(--red);color:var(--red);border-radius:7px;font-size:13px;cursor:pointer;font-family:var(--font);}
+
+.clue-tabs-bar{display:flex;border-bottom:1px solid var(--border);margin-bottom:18px;flex-wrap:wrap;}
+.clue-tab-btn{padding:9px 18px;font-size:13px;font-weight:500;color:var(--text2);cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;}
+.clue-tab-btn:hover{color:var(--text);}
+.clue-tab-btn.active{color:var(--accent);border-bottom-color:var(--accent);}
+.clue-subject-panel{display:none;}
+.clue-subject-panel.active{display:block;}
+.clue-toolbar{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center;}
+.tool-btn{padding:7px 14px;border-radius:6px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-size:12px;cursor:pointer;font-family:var(--font);transition:all .15s;}
+.tool-btn:hover{border-color:var(--accent);color:var(--accent);}
+.clue-search{flex:1;max-width:280px;background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:6px;font-size:13px;padding:7px 12px;outline:none;font-family:var(--font);transition:border-color .15s;}
+.clue-search:focus{border-color:var(--accent);}
+.ans-section{background:var(--bg2);border:1px solid var(--border);border-radius:10px;margin-bottom:10px;overflow:hidden;}
+.ans-header{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;cursor:pointer;transition:background .15s;}
+.ans-header:hover{background:var(--bg3);}
+.ans-name{font-weight:600;font-size:14px;}
+.ans-stats{display:flex;gap:12px;font-size:12px;font-family:var(--mono);}
+.ans-total-miss{color:var(--red);}
+.ans-clues{display:none;padding:0 16px 14px;}
+.ans-clues.open{display:block;}
+.clue-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border);font-size:13px;gap:8px;}
+.clue-row:last-child{border-bottom:none;}
+.clue-text-cell{flex:1;}
+.clue-miss{font-family:var(--mono);font-size:12px;font-weight:600;padding:2px 8px;border-radius:4px;min-width:36px;text-align:center;}
+.cm-has{background:rgba(224,85,85,.13);color:var(--red);}
+.cm-no{background:var(--bg3);color:var(--text2);}
+.edit-clue-btn{background:none;border:none;cursor:pointer;color:var(--text2);font-size:14px;padding:2px 6px;border-radius:4px;transition:color .15s;}
+.edit-clue-btn:hover{color:var(--accent);}
+.empty-state{text-align:center;padding:40px;color:var(--text2);font-size:14px;}
+
+.fc-controls{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap;}
+.fc-mode-btn{padding:8px 18px;border-radius:7px;border:1px solid var(--border);background:var(--bg2);color:var(--text2);font-size:13px;font-weight:500;cursor:pointer;transition:all .15s;}
+.fc-mode-btn:hover{border-color:var(--accent);color:var(--accent);}
+.fc-mode-btn.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+.fc-progress{font-size:12px;color:var(--text2);font-family:var(--mono);margin-bottom:8px;text-align:center;}
+.fc-card{background:var(--bg2);border:2px solid var(--border);border-radius:14px;padding:32px;text-align:center;min-height:200px;display:flex;flex-direction:column;justify-content:center;align-items:center;margin-bottom:14px;}
+.fc-subject{font-size:11px;color:var(--accent);font-weight:600;font-family:var(--mono);margin-bottom:10px;text-transform:uppercase;letter-spacing:.05em;}
+.fc-status{display:inline-block;padding:3px 10px;border-radius:10px;font-size:11px;font-weight:600;font-family:var(--mono);margin-bottom:10px;}
+.fc-status.know{background:rgba(76,175,125,.15);color:var(--green);}
+.fc-status.miss{background:rgba(224,85,85,.15);color:var(--red);}
+.fc-clue{font-size:16px;line-height:1.65;max-width:580px;}
+.fc-answer{font-size:22px;font-weight:700;color:var(--accent);margin-top:16px;padding-top:16px;border-top:1px solid var(--border);width:100%;display:none;}
+.fc-counts{font-size:12px;color:var(--text2);font-family:var(--mono);margin-top:8px;}
+.fc-reveal-btn{width:100%;max-width:380px;padding:11px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;cursor:pointer;margin-bottom:10px;font-family:var(--font);transition:all .15s;}
+.fc-reveal-btn:hover{border-color:var(--accent);color:var(--accent);}
+.fc-action-btns{display:none;gap:10px;width:100%;max-width:380px;}
+.fc-action-btns.visible{display:flex;}
+.fc-know-btn{flex:1;padding:12px;background:var(--green);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;font-family:var(--font);}
+.fc-miss-btn{flex:1;padding:12px;background:var(--red);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;font-family:var(--font);}
+.fc-done{text-align:center;padding:40px;font-size:18px;font-weight:600;color:var(--green);display:none;}
+
+.toast{position:fixed;bottom:24px;right:24px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:11px 16px;font-size:13px;z-index:999;opacity:0;transform:translateY(8px);transition:all .2s;pointer-events:none;}
+.toast.show{opacity:1;transform:translateY(0);}
+.ans-header-actions{display:flex;align-items:center;gap:6px;}
+.ans-edit-btn{background:none;border:none;cursor:pointer;color:var(--text2);font-size:13px;padding:3px 7px;border-radius:4px;transition:color .15s;opacity:0.7;}
+.ans-edit-btn:hover{color:var(--accent);opacity:1;}
+.ans-del-btn{background:none;border:none;cursor:pointer;color:var(--text2);font-size:13px;padding:3px 7px;border-radius:4px;transition:color .15s;opacity:0.7;}
+.ans-del-btn:hover{color:var(--red);opacity:1;}
+.clue-tab-edit{font-size:11px;margin-left:4px;color:var(--text2);cursor:pointer;opacity:0.6;vertical-align:middle;}
+.clue-tab-edit:hover{color:var(--accent);opacity:1;}
+.confirm-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:500;display:none;align-items:center;justify-content:center;}
+.confirm-overlay.open{display:flex;}
+.confirm-box{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:24px;max-width:400px;width:90%;text-align:center;}
+.confirm-title{font-size:15px;font-weight:700;margin-bottom:10px;}
+.confirm-msg{font-size:13px;color:var(--text2);margin-bottom:20px;line-height:1.6;}
+.confirm-btns{display:flex;gap:10px;justify-content:center;}
+.confirm-yes{padding:9px 22px;background:var(--red);color:#fff;border:none;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;}
+.confirm-no{padding:9px 22px;background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:7px;font-size:13px;cursor:pointer;}
+.subject-edit-bar{display:flex;gap:6px;align-items:center;margin-bottom:12px;flex-wrap:wrap;}
+.sub-edit-pill{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:20px;font-size:12px;font-family:var(--mono);}
+.sub-pill-name{color:var(--text);}
+.sub-pill-edit{background:none;border:none;cursor:pointer;color:var(--text2);font-size:11px;padding:0 2px;transition:color .15s;}
+.sub-pill-edit:hover{color:var(--accent);}
+.sub-pill-del{background:none;border:none;cursor:pointer;color:var(--text2);font-size:11px;padding:0 2px;transition:color .15s;}
+.sub-pill-del:hover{color:var(--red);}
+.miss-badge{display:inline-block;padding:2px 7px;border-radius:10px;font-size:11px;font-family:var(--mono);font-weight:600;background:rgba(224,85,85,.13);color:var(--red);margin-left:6px;}
+
+/* ── PACKET LOG ── */
+.plog-toolbar{display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap;}
+.plog-search{flex:1;min-width:200px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:9px 14px;font-size:13px;color:var(--text);font-family:var(--font);outline:none;transition:border-color .15s;}
+.plog-search:focus{border-color:var(--accent);}
+.plog-count{font-size:12px;color:var(--text2);font-family:var(--mono);white-space:nowrap;}
+.plog-empty{text-align:center;padding:60px 20px;color:var(--text2);font-size:14px;}
+/* Answer group */
+.plog-group{background:var(--bg2);border:1px solid var(--border);border-radius:12px;margin-bottom:14px;overflow:hidden;}
+.plog-group-header{display:flex;justify-content:space-between;align-items:center;padding:13px 18px;cursor:pointer;gap:12px;user-select:none;}
+.plog-group-header:hover{background:var(--bg3);}
+.plog-group-ans{font-weight:700;font-size:15px;flex:1;}
+.plog-group-count{font-size:11px;color:var(--text2);font-family:var(--mono);background:var(--bg3);padding:3px 9px;border-radius:10px;}
+.plog-group-body{display:none;border-top:1px solid var(--border);}
+.plog-group-body.open{display:block;}
+/* Individual tossup row */
+.plog-tu{border-bottom:1px solid var(--border);padding:0;}
+.plog-tu:last-child{border-bottom:none;}
+.plog-tu-header{display:flex;justify-content:space-between;align-items:center;padding:11px 18px;cursor:pointer;gap:10px;}
+.plog-tu-header:hover{background:var(--bg3);}
+.plog-tu-left{display:flex;align-items:center;gap:10px;flex:1;min-width:0;}
+.plog-tu-tournament{font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.plog-tu-meta{font-size:11px;color:var(--text2);font-family:var(--mono);white-space:nowrap;}
+.plog-tu-right{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.plog-badge{padding:3px 9px;border-radius:5px;font-size:11px;font-family:var(--mono);font-weight:700;}
+.plog-tu-body{display:none;padding:14px 18px;background:var(--bg);border-top:1px solid var(--border);}
+.plog-tu-body.open{display:block;}
+.plog-info-row{display:flex;flex-wrap:wrap;gap:16px;margin-bottom:12px;}
+.plog-info-cell{display:flex;flex-direction:column;gap:2px;}
+.plog-info-label{font-size:10px;color:var(--text2);font-family:var(--mono);text-transform:uppercase;letter-spacing:.06em;}
+.plog-info-val{font-size:13px;font-family:var(--mono);color:var(--text);}
+.plog-cel{color:var(--accent)!important;}
+/* Buzz bar */
+.plog-buzz-wrap{margin:4px 0 14px;}
+.plog-buzz-label{font-size:11px;color:var(--text2);font-family:var(--mono);margin-bottom:5px;}
+.plog-buzz-track{background:var(--bg3);border-radius:4px;height:8px;position:relative;}
+.plog-buzz-fill{position:absolute;left:0;top:0;height:100%;background:var(--accent);border-radius:4px;opacity:.35;}
+.plog-power-tick{position:absolute;top:-4px;width:3px;height:16px;background:var(--yellow);border-radius:2px;}
+.plog-buzz-dot{position:absolute;top:50%;transform:translate(-50%,-50%);width:14px;height:14px;border-radius:50%;border:2px solid var(--bg2);}
+/* Question text word highlighting */
+.plog-q-text{font-size:13px;line-height:2;margin-bottom:10px;word-break:break-word;}
+.qw{display:inline;}
+.qw.power-mark{color:var(--yellow);font-weight:700;}
+.qw.buzzed{background:var(--accent);color:#fff;border-radius:3px;padding:1px 3px;}
+.qw.pre-power{color:var(--yellow);opacity:.7;}
+.plog-answer-line{font-size:12px;color:var(--text2);font-family:var(--mono);}
+.plog-answer-line span{color:var(--text);font-weight:600;}
+
+/* ── STATS ── */
+.stats-section{margin-bottom:28px;}
+.stats-section-title{font-size:11px;color:var(--text2);font-family:var(--mono);text-transform:uppercase;letter-spacing:.07em;margin-bottom:12px;display:flex;align-items:center;gap:10px;}
+.stats-tabs{display:flex;gap:0;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:3px;margin-bottom:16px;width:fit-content;}
+.stats-tab{padding:6px 18px;border-radius:6px;font-size:13px;font-weight:500;color:var(--text2);cursor:pointer;transition:all .15s;}
+.stats-tab.active{background:var(--bg2);color:var(--accent);box-shadow:0 1px 4px rgba(0,0,0,.2);}
+.stats-table{width:100%;border-collapse:collapse;font-size:13px;}
+.stats-table th{text-align:left;font-size:10px;color:var(--text2);font-family:var(--mono);text-transform:uppercase;letter-spacing:.06em;padding:6px 12px;border-bottom:2px solid var(--border);white-space:nowrap;}
+.stats-table td{padding:9px 12px;border-bottom:1px solid var(--border);font-family:var(--mono);font-size:13px;}
+.stats-table tr:last-child td{border-bottom:none;}
+.stats-table tr:hover td{background:var(--bg3);}
+.stats-table .td-sub{font-family:var(--font);font-weight:600;font-size:13px;color:var(--text);}
+.stats-table .td-pow{color:var(--yellow);}
+.stats-table .td-get{color:var(--green);}
+.stats-table .td-neg{color:var(--red);}
+.stats-table .td-cel{color:var(--accent);}
+.stats-table .td-pts{font-weight:700;}
+.stats-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden;}
+.stats-empty{text-align:center;padding:48px;color:var(--text2);font-size:14px;}
+.stats-panel-wrap{display:none;}
+.stats-panel-wrap.active{display:block;}
+.dup-warning{font-size:12px;color:var(--yellow);background:rgba(240,192,64,.1);border:1px solid rgba(240,192,64,.3);border-radius:6px;padding:7px 11px;margin-bottom:10px;display:none;}
+.dup-warning.visible{display:block;}
+</style>
+</head>
+<body data-theme="dark">
+<nav>
+  <div class="nav-logo">QBAtlas</div>
+  <div class="nav-tabs">
+    <div class="nav-tab active" onclick="showPanel('reader')">Reader</div>
+    <div class="nav-tab" onclick="showPanel('clues')">Clues</div>
+    <div class="nav-tab" onclick="showPanel('log')">Packet Log</div>
+    <div class="nav-tab" onclick="showPanel('stats')">Stats</div>
+  </div>
+  <div class="nav-right">
+    <button class="theme-btn active" onclick="setTheme('dark',this)">Dark</button>
+    <button class="theme-btn" onclick="setTheme('light',this)">Light</button>
+    <button class="theme-btn" onclick="setTheme('og',this)">OG</button>
+  </div>
+</nav>
+
+<!-- READER -->
+<div class="panel active" id="panel-reader">
+  <div class="reader-controls">
+    <div class="ctrl-group">
+      <div class="ctrl-label">Subject</div>
+      <div class="multi-select-container">
+        <div class="multi-select-btn" onclick="toggleDrop('subDrop')"><span id="subLabel">All Subjects</span><span>▾</span></div>
+        <div class="multi-dropdown" id="subDrop">
+          <label class="multi-option"><input type="checkbox" value="Science" onchange="updateSubLabel()"> Science (SCI)</label>
+          <label class="multi-option"><input type="checkbox" value="History" onchange="updateSubLabel()"> History (HIS)</label>
+          <label class="multi-option"><input type="checkbox" value="Literature" onchange="updateSubLabel()"> Literature (LIT)</label>
+          <label class="multi-option"><input type="checkbox" value="Fine Arts" onchange="updateSubLabel()"> Fine Arts (FA)</label>
+          <label class="multi-option"><input type="checkbox" value="Religion" onchange="updateSubLabel()"> Religion (REL)</label>
+          <label class="multi-option"><input type="checkbox" value="Mythology" onchange="updateSubLabel()"> Mythology (MYTH)</label>
+          <label class="multi-option"><input type="checkbox" value="Philosophy" onchange="updateSubLabel()"> Philosophy (PHIL)</label>
+          <label class="multi-option"><input type="checkbox" value="Social Science" onchange="updateSubLabel()"> Social Science (SS)</label>
+          <label class="multi-option"><input type="checkbox" value="Current Events" onchange="updateSubLabel()"> Current Events (CE)</label>
+          <label class="multi-option"><input type="checkbox" value="Geography" onchange="updateSubLabel()"> Geography (GEO)</label>
+          <label class="multi-option"><input type="checkbox" value="Other Academic" onchange="updateSubLabel()"> Other Academic (OTHER)</label>
+          <label class="multi-option"><input type="checkbox" value="Pop Culture" onchange="updateSubLabel()"> Trash / Pop Culture (TRASH)</label>
+        </div>
+      </div>
+    </div>
+    <div class="ctrl-group">
+      <div class="ctrl-label">Difficulty</div>
+      <div class="multi-select-container">
+        <div class="multi-select-btn" onclick="toggleDrop('diffDrop')"><span id="diffLabel">All Difficulties</span><span>▾</span></div>
+        <div class="multi-dropdown" id="diffDrop">
+          <label class="multi-option"><input type="checkbox" value="1" onchange="updateDiffLabel()"> 1. Middle School</label>
+          <label class="multi-option"><input type="checkbox" value="2" onchange="updateDiffLabel()"> 2. Easy High School</label>
+          <label class="multi-option"><input type="checkbox" value="3" onchange="updateDiffLabel()"> 3. Regular High School</label>
+          <label class="multi-option"><input type="checkbox" value="4" onchange="updateDiffLabel()"> 4. Hard High School</label>
+          <label class="multi-option"><input type="checkbox" value="5" onchange="updateDiffLabel()"> 5. National High School</label>
+          <label class="multi-option"><input type="checkbox" value="6" onchange="updateDiffLabel()"> 6. Easy College</label>
+          <label class="multi-option"><input type="checkbox" value="7" onchange="updateDiffLabel()"> 7. Medium College</label>
+          <label class="multi-option"><input type="checkbox" value="8" onchange="updateDiffLabel()"> 8. Regional College</label>
+          <label class="multi-option"><input type="checkbox" value="9" onchange="updateDiffLabel()"> 9. National College</label>
+        </div>
+      </div>
+    </div>
+    <div class="ctrl-group">
+      <div class="ctrl-label">Speed: <span class="wpm-val" id="wpmVal">200 WPM</span></div>
+      <input type="range" min="50" max="600" value="200" step="10" id="wpmSlider" oninput="document.getElementById('wpmVal').textContent=this.value+' WPM'">
+    </div>
+    <div class="ctrl-group">
+      <div class="ctrl-label">Year Range</div>
+      <div class="year-inputs">
+        <input type="number" class="year-input" id="yearFrom" min="2000" max="2026" value="2000" placeholder="From">
+        <span style="color:var(--text2);font-size:13px;">–</span>
+        <input type="number" class="year-input" id="yearTo" min="2000" max="2026" value="2026" placeholder="To">
+      </div>
+    </div>
+    <div class="ctrl-group">
+      <div class="ctrl-label">Timer</div>
+      <div class="toggle-row">
+        <label class="toggle-switch"><input type="checkbox" id="timerToggle"><span class="toggle-slider"></span></label>
+        <span style="font-size:13px;color:var(--text)">10 sec</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="score-bar">
+    <div class="score-item"><div class="score-val s-pow" id="sPow">0</div><div class="score-lbl">Powers</div></div>
+    <div class="score-item"><div class="score-val s-get" id="sGet">0</div><div class="score-lbl">Gets</div></div>
+    <div class="score-item"><div class="score-val s-neg" id="sNeg">0</div><div class="score-lbl">Negs</div></div>
+    <div class="score-item"><div class="score-val" id="sTU">0</div><div class="score-lbl">Tossups</div></div>
+    <div class="score-item"><div class="score-val s-cel" id="sCel">—</div><div class="score-lbl">Avg Celerity</div></div>
+    <div class="score-item"><div class="score-val s-tot" id="sTotal">0</div><div class="score-lbl">Score</div></div>
+  </div>
+
+  <div class="kb-hints">
+    <div class="kb-hint"><span class="kb-key">S</span>Start</div>
+    <div class="kb-hint"><span class="kb-key">P</span>Pause</div>
+    <div class="kb-hint"><span class="kb-key">Space</span>Buzz</div>
+    <div class="kb-hint"><span class="kb-key">Enter</span>Submit</div>
+    <div class="kb-hint"><span class="kb-key">N</span>Next</div>
+  </div>
+
+  <div class="question-box">
+    <div class="q-meta" id="qMeta"></div>
+    <div class="q-status" id="qStatus"><span class="ready">Press S to start</span></div>
+    <div class="q-text" id="qText"></div>
+    <div class="answerline" id="answerlineBox">ANSWER: <span id="answerlineText"></span></div>
+  </div>
+
+  <div class="buzz-area" id="buzzArea">
+    <div class="buzz-lbl">Your Answer — press Enter to submit</div>
+    <div class="timer-bar-wrap" id="timerBarWrap">
+      <div class="timer-top">
+        <span class="timer-label">Time remaining</span>
+        <span class="timer-countdown" id="timerCountdown">10.0</span>
+      </div>
+      <div class="timer-track"><div class="timer-fill" id="timerFill" style="width:100%"></div></div>
+    </div>
+    <input type="text" class="buzz-input" id="buzzInput" placeholder="Type your answer..." autocomplete="off" style="margin-top:8px">
+    <div class="result-row" id="resultRow">
+      <span class="result-badge" id="resultBadge"></span>
+      <span class="typed-ans" id="typedAns"></span>
+      <button class="toggle-judge-btn" id="toggleJudgeBtn" onclick="toggleJudge()"></button>
+    </div>
+  </div>
+
+  <div class="log-section">
+    <div class="log-title">Question Log</div>
+    <div id="questionLog"></div>
+  </div>
+</div>
+
+<!-- CLUES -->
+<div class="panel" id="panel-clues">
+  <div class="clue-toolbar">
+    <input type="text" class="clue-search" id="clueSearch" placeholder="Search answer lines..." oninput="filterClues()">
+    <button class="tool-btn" onclick="openNewCluePopup()">➕ New Clue</button>
+    <button class="tool-btn" onclick="exportAnki()">📤 Export for Anki</button>
+    <button class="tool-btn" onclick="importAnki()">📥 Import from Anki</button>
+    <button class="tool-btn" onclick="downloadJSON()">⬇ Backup JSON</button>
+    <button class="tool-btn" onclick="importJSON()">⬆ Import JSON</button>
+  </div>
+  <div class="subject-edit-bar" id="subjectEditBar"></div>
+  <div class="clue-tabs-bar" id="clueTabsBar"></div>
+  <div id="clueTabPanels"></div>
+</div>
+
+<!-- PACKET LOG -->
+<div class="panel" id="panel-log">
+  <div class="plog-toolbar">
+    <input type="text" class="plog-search" id="plogSearch" placeholder="Search by answer, tournament, category..." oninput="renderPlog()">
+    <span class="plog-count" id="plogCount"></span>
+  </div>
+  <div id="plogList"></div>
+</div>
+
+<!-- STATS -->
+<div class="panel" id="panel-stats">
+  <div class="stats-tabs" id="statsTabs">
+    <div class="stats-tab active" onclick="switchStatsTab('category',this)">By Category</div>
+    <div class="stats-tab" onclick="switchStatsTab('subcategory',this)">By Subcategory</div>
+  </div>
+  <div class="stats-panel-wrap active" id="sp-category">
+    <div class="stats-card">
+      <table class="stats-table" id="statsCatTable">
+        <thead><tr>
+          <th>Category</th><th>Heard</th><th>15</th><th>10</th><th>-5</th><th>Dead</th><th>Get%</th><th>Avg Cel</th><th>Points</th>
+        </tr></thead>
+        <tbody id="statsCatBody"></tbody>
+      </table>
+    </div>
+    <div class="stats-empty" id="statsCatEmpty" style="display:none">No session data yet — play some tossups!</div>
+  </div>
+  <div class="stats-panel-wrap" id="sp-subcategory">
+    <div class="stats-card">
+      <table class="stats-table" id="statsSubTable">
+        <thead><tr>
+          <th>Subcategory</th><th>Heard</th><th>15</th><th>10</th><th>-5</th><th>Dead</th><th>Get%</th><th>Avg Cel</th><th>Points</th>
+        </tr></thead>
+        <tbody id="statsSubBody"></tbody>
+      </table>
+    </div>
+    <div class="stats-empty" id="statsSubEmpty" style="display:none">No subcategory data yet.</div>
+  </div>
+</div>
+
+<!-- ADD CLUE POPUP -->
+<div class="popup-overlay" id="addClueOverlay">
+  <div class="popup-box">
+    <div class="popup-title">Add Clue</div>
+    <div class="popup-sent" id="addClueSent"></div>
+    <div class="dup-warning" id="dupWarning"></div>
+    <label class="popup-option">
+      <input type="radio" class="popup-radio" name="cpChoice" value="whole" checked onchange="cpToggle()">
+      <div><div class="popup-opt-label">Add whole sentence</div><div class="popup-opt-sub" id="cpWholeSub"></div></div>
+    </label>
+    <label class="popup-option">
+      <input type="radio" class="popup-radio" name="cpChoice" value="custom" onchange="cpToggle()">
+      <div style="flex:1"><div class="popup-opt-label">Type your own clue</div>
+        <input type="text" class="popup-input" id="cpCustomInput" placeholder="Type or paste from the question..." style="display:none" oninput="checkDupWarning()">
+      </div>
+    </label>
+    <div class="popup-btns">
+      <button class="popup-cancel" onclick="closePopup('addClueOverlay')">Cancel</button>
+      <button class="popup-confirm" onclick="confirmAddClue()">Add Clue</button>
+    </div>
+  </div>
+</div>
+
+<!-- NEW CLUE POPUP -->
+<div class="popup-overlay" id="newClueOverlay">
+  <div class="popup-box">
+    <div class="popup-title">Add New Clue</div>
+    <div class="dup-warning" id="newDupWarning"></div>
+    <div class="popup-field">
+      <div class="popup-field-label">Subject</div>
+      <select class="popup-input" id="newClueSub" style="display:block;cursor:pointer;background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:6px;font-size:13px;padding:8px 12px;width:100%">
+        <option value="SCI">Science (SCI)</option>
+        <option value="HIS">History (HIS)</option>
+        <option value="LIT">Literature (LIT)</option>
+        <option value="FA">Fine Arts (FA)</option>
+        <option value="REL">Religion (REL)</option>
+        <option value="MYTH">Mythology (MYTH)</option>
+        <option value="PHIL">Philosophy (PHIL)</option>
+        <option value="SS">Social Science (SS)</option>
+        <option value="CE">Current Events (CE)</option>
+        <option value="GEO">Geography (GEO)</option>
+        <option value="OTHER">Other Academic (OTHER)</option>
+        <option value="TRASH">Trash / Pop Culture (TRASH)</option>
+      </select>
+    </div>
+    <div class="popup-field">
+      <div class="popup-field-label">Answer</div>
+      <input type="text" class="popup-input" id="newClueAnswer" placeholder="e.g. General Relativity" style="display:block" oninput="checkNewDup()">
+    </div>
+    <div class="popup-field">
+      <div class="popup-field-label">Clue</div>
+      <input type="text" class="popup-input" id="newClueText" placeholder="e.g. Ricci tensor" style="display:block" oninput="checkNewDup()">
+    </div>
+    <div class="popup-btns">
+      <button class="popup-cancel" onclick="closePopup('newClueOverlay')">Cancel</button>
+      <button class="popup-confirm" onclick="confirmNewClue()">Add Clue</button>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT CLUE POPUP -->
+<div class="popup-overlay" id="editClueOverlay">
+  <div class="popup-box">
+    <div class="popup-title">Edit Clue</div>
+    <div class="popup-field">
+      <div class="popup-field-label">Clue Text</div>
+      <input type="text" class="popup-input" id="editClueText" style="display:block">
+    </div>
+    <div class="popup-field">
+      <div class="popup-field-label">Miss Count</div>
+      <input type="number" class="popup-input" id="editMissCount" min="0" style="display:block;width:120px">
+    </div>
+    <div class="popup-btns">
+      <button class="popup-delete" onclick="deleteClue()">🗑 Delete</button>
+      <button class="popup-cancel" onclick="closePopup('editClueOverlay')">Cancel</button>
+      <button class="popup-confirm" onclick="confirmEditClue()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT ANSWERLINE POPUP -->
+<div class="popup-overlay" id="editAnsOverlay">
+  <div class="popup-box">
+    <div class="popup-title">Edit Answer Line</div>
+    <div class="popup-field">
+      <div class="popup-field-label">Answer Text</div>
+      <input type="text" class="popup-input" id="editAnsText" style="display:block">
+    </div>
+    <div class="popup-field">
+      <div class="popup-field-label">Move to Subject</div>
+      <select class="popup-input" id="editAnsSub" style="display:block;cursor:pointer;background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:6px;font-size:13px;padding:8px 12px;width:100%"></select>
+    </div>
+    <div class="popup-btns">
+      <button class="popup-delete" onclick="deleteAnswerLine()">🗑 Delete Answer</button>
+      <button class="popup-cancel" onclick="closePopup('editAnsOverlay')">Cancel</button>
+      <button class="popup-confirm" onclick="confirmEditAns()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT SUBJECT POPUP -->
+<div class="popup-overlay" id="editSubOverlay">
+  <div class="popup-box">
+    <div class="popup-title">Edit Subject</div>
+    <div class="popup-field">
+      <div class="popup-field-label">Subject Key (short code)</div>
+      <input type="text" class="popup-input" id="editSubKey" style="display:block" maxlength="12">
+    </div>
+    <div class="popup-btns">
+      <button class="popup-delete" onclick="deleteSubject()">🗑 Delete Subject</button>
+      <button class="popup-cancel" onclick="closePopup('editSubOverlay')">Cancel</button>
+      <button class="popup-confirm" onclick="confirmEditSub()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM DIALOG -->
+<div class="confirm-overlay" id="confirmOverlay">
+  <div class="confirm-box">
+    <div class="confirm-title" id="confirmTitle">Are you sure?</div>
+    <div class="confirm-msg" id="confirmMsg"></div>
+    <div class="confirm-btns">
+      <button class="confirm-no" onclick="confirmNo()">Cancel</button>
+      <button class="confirm-yes" id="confirmYesBtn" onclick="confirmYes()">Delete</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── IndexedDB ────────────────────────────────────────────────────
+let idb;
+function openDB(){return new Promise((res,rej)=>{const r=indexedDB.open('QBStudy',7);r.onupgradeneeded=e=>{const d=e.target.result;if(!d.objectStoreNames.contains('clues'))d.createObjectStore('clues',{keyPath:'id'});if(!d.objectStoreNames.contains('flashcards'))d.createObjectStore('flashcards',{keyPath:'id'});if(!d.objectStoreNames.contains('results'))d.createObjectStore('results',{keyPath:'id'});if(!d.objectStoreNames.contains('plog'))d.createObjectStore('plog',{keyPath:'id'});};r.onsuccess=e=>{idb=e.target.result;res();};r.onerror=()=>rej(r.error);});}
+function dbPut(store,val){return new Promise((res,rej)=>{const tx=idb.transaction(store,'readwrite');tx.objectStore(store).put(val).onsuccess=()=>res();tx.onerror=()=>rej(tx.error);});}
+function dbGetAll(store){return new Promise((res,rej)=>{const tx=idb.transaction(store,'readonly');const r=tx.objectStore(store).getAll();r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});}
+
+// ── CLUE CACHE ───────────────────────────────────────────────────
+let clueCache={};
+async function loadClues(){const all=await dbGetAll('clues');clueCache={};all.forEach(r=>{if(!clueCache[r.subject])clueCache[r.subject]={};clueCache[r.subject][r.answer]={clues:r.clues,totalMisses:r.totalMisses};});}
+async function saveClueRec(sub,ans){const d=clueCache[sub]?.[ans];if(!d)return;await dbPut('clues',{id:sub+'||'+ans,subject:sub,answer:ans,clues:d.clues,totalMisses:d.totalMisses});}
+function ensureEntry(sub,ans){if(!clueCache[sub])clueCache[sub]={};if(!clueCache[sub][ans])clueCache[sub][ans]={clues:[],totalMisses:0};}
+async function addClue(sub,ans,text){ensureEntry(sub,ans);const e=clueCache[sub][ans];if(e.clues.some(c=>c.text.toLowerCase()===text.toLowerCase()))return false;e.clues.push({text,misses:0});e.totalMisses=e.clues.reduce((s,c)=>s+c.misses,0);await saveClueRec(sub,ans);return true;}
+
+// ── FLASHCARD CACHE ──────────────────────────────────────────────
+let fcCache=[];
+async function loadFC(){fcCache=await dbGetAll('flashcards');}
+async function syncFC(sub,ans,clue){const id=sub+'||'+ans+'||'+clue;if(!fcCache.find(c=>c.id===id)){const card={id,subject:sub,answer:ans,clue,knowCount:0,missCount:0,status:'miss'};fcCache.push(card);await dbPut('flashcards',card);}}
+
+// Backfill: create flashcard records for any clue that doesn't have one yet.
+// Runs at startup so imported/pre-existing clues are all represented.
+async function backfillFC(){
+  let added=0;
+  for(const [sub,answers] of Object.entries(clueCache)){
+    for(const [ans,entry] of Object.entries(answers)){
+      for(const clue of entry.clues){
+        const id=sub+'||'+ans+'||'+clue.text;
+        if(!fcCache.find(c=>c.id===id)){
+          const card={id,subject:sub,answer:ans,clue:clue.text,knowCount:0,missCount:0,status:'miss'};
+          fcCache.push(card);
+          await dbPut('flashcards',card);
+          added++;
+        }
+      }
+    }
+  }
+  if(added>0)console.log(`Backfilled ${added} missing flashcard(s).`);
+}
+async function updateFC(id,result){
+  const c=fcCache.find(x=>x.id===id);
+  if(!c)return;
+  if(result==='know'){c.knowCount++;c.status='know';}
+  else{c.missCount++;c.status='miss';}
+  // Only save to flashcard store — clue DB miss is NOT updated here
+  await dbPut('flashcards',c);
+}
+
+// ── THEME ────────────────────────────────────────────────────────
+function setTheme(t,btn){document.body.dataset.theme=t;document.querySelectorAll('.theme-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');localStorage.setItem('qbTheme',t);}
+
+// ── PANELS ───────────────────────────────────────────────────────
+function showPanel(name){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('panel-'+name).classList.add('active');
+  ['reader','clues','log','stats'].forEach((n,i)=>{if(n===name)document.querySelectorAll('.nav-tab')[i].classList.add('active');});
+  if(name==='clues')renderClues();
+  if(name==='stats')renderStats();
+  if(name==='log')renderPlog();
+}
+
+// ── DROPDOWNS ────────────────────────────────────────────────────
+function toggleDrop(id){document.getElementById(id).classList.toggle('open');}
+document.addEventListener('click',e=>{if(!e.target.closest('.multi-select-container'))document.querySelectorAll('.multi-dropdown').forEach(d=>d.classList.remove('open'));});
+function getChecked(id){return[...document.querySelectorAll('#'+id+' input:checked')].map(i=>i.value);}
+function updateSubLabel(){const c=getChecked('subDrop');document.getElementById('subLabel').textContent=c.length?c.length+' selected':'All Subjects';}
+function updateDiffLabel(){const c=getChecked('diffDrop');document.getElementById('diffLabel').textContent=c.length?c.length+' selected':'All Difficulties';}
+
+// ── NLP ──────────────────────────────────────────────────────────
+const SW=new Set(['a','an','the','is','it','in','on','of','to','and','or','for','with','this','that','was','by','its','as','at','be','are','were','has','have','had','but','not','from','one','side','other','often','also','can','which','both','their','first','name','than','into','over','after','these','theory','point','question','answer','ten','points','type']);
+function wds(s){return s.toLowerCase().replace(/[^a-z0-9\s]/g,'').split(/\s+/).filter(w=>w.length>2&&!SW.has(w)).map(w=>{if(w.endsWith('ing')&&w.length>5)return w.slice(0,-3);if(w.endsWith('tion'))return w.slice(0,-4);if(w.endsWith('ed')&&w.length>4)return w.slice(0,-2);if(w.endsWith('es')&&w.length>4)return w.slice(0,-2);if(w.endsWith('s')&&w.length>4)return w.slice(0,-1);return w;});}
+function sim(a,b){const wa=new Set(wds(a)),wb=new Set(wds(b));if(!wa.size||!wb.size)return 0;let ov=0;wb.forEach(w=>{if(wa.has(w))ov++;});return ov/Math.min(wa.size,wb.size);}
+function clueInText(clue,text){const cw=wds(clue),tw=new Set(wds(text));if(!cw.length)return false;let m=0;cw.forEach(w=>{if(tw.has(w))m++;});return m/cw.length>=0.75;}
+
+// ── ANSWER CHECK ─────────────────────────────────────────────────
+function parseAcceptable(raw){
+  if(!raw)return[];
+  let s=raw.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();
+  const parts=[];
+  const main=s.replace(/\[.*?\]/g,'').replace(/\(.*?\)/g,'').trim();
+  if(main)parts.push(main.toLowerCase());
+  (s.match(/\[([^\]]+)\]/g)||[]).forEach(b=>{
+    const inner=b.slice(1,-1);
+    inner.split(';').forEach(chunk=>{
+      chunk=chunk.trim();
+      const stripped=chunk.replace(/^(accept|or|prompt\s+on|prompt|do\s+not\s+accept|antiprompt)\s+/i,'').trim();
+      if(stripped&&!chunk.match(/^(do\s+not\s+accept|antiprompt)/i))parts.push(stripped.toLowerCase());
+    });
+  });
+  return[...new Set(parts.filter(p=>p.length>0))];
+}
+function normalize(s){return s.toLowerCase().replace(/[^a-z0-9\s]/g,' ').replace(/\s+/g,' ').trim();}
+function levenshtein(a,b){
+  const m=a.length,n=b.length;
+  const dp=Array.from({length:m+1},(_,i)=>Array.from({length:n+1},(_,j)=>i===0?j:j===0?i:0));
+  for(let i=1;i<=m;i++)for(let j=1;j<=n;j++)dp[i][j]=a[i-1]===b[j-1]?dp[i-1][j-1]:1+Math.min(dp[i-1][j],dp[i][j-1],dp[i-1][j-1]);
+  return dp[m][n];
+}
+function fuzzyWordMatch(a,b){
+  // Allow up to 1 typo per 4 chars
+  const maxDist=Math.floor(Math.max(a.length,b.length)/4);
+  return levenshtein(a,b)<=Math.max(1,maxDist);
+}
+function checkAnswer(typed,rawAns){
+  const t=normalize(typed);
+  if(!t)return false;
+  const acceptable=parseAcceptable(rawAns);
+  for(const a of acceptable){
+    const an=normalize(a);
+    if(!an)continue;
+    if(t===an)return true;
+    if(an.includes(t)&&t.length>=3)return true;
+    if(t.includes(an)&&an.length>=3)return true;
+    if(sim(t,an)>=0.75)return true;
+    // Word-level fuzzy match
+    const ansWords=an.split(' ').filter(w=>w.length>2);
+    const typedWords=t.split(' ').filter(w=>w.length>2);
+    if(ansWords.length>0&&typedWords.length>0){
+      const matches=typedWords.filter(tw=>ansWords.some(aw=>aw===tw||aw.startsWith(tw)||tw.startsWith(aw)||fuzzyWordMatch(tw,aw)));
+      if(matches.length/Math.min(ansWords.length,typedWords.length)>=0.7)return true;
+    }
+    // Full string fuzzy — for single word answers like "gauss"
+    if(ansWords.length<=2&&typedWords.length<=2&&fuzzyWordMatch(t,an))return true;
+  }
+  return false;
+}
+function getAnswerText(raw){if(!raw)return'';return raw.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();}
+function stripHTML(s){return s.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();}
+
+// ── SUBJECT KEY ──────────────────────────────────────────────────
+function subKey(cat){
+  if(!cat)return'OTHER';const c=cat.toLowerCase();
+  if(c.includes('science')||c.includes('math')||c.includes('bio')||c.includes('chem')||c.includes('phys'))return'SCI';
+  if(c.includes('history'))return'HIS';
+  if(c.includes('literature')||c.includes('lit'))return'LIT';
+  if(c.includes('fine art')||c.includes('music')||c.includes('visual'))return'FA';
+  if(c.includes('religion'))return'REL';
+  if(c.includes('myth'))return'MYTH';
+  if(c.includes('philosophy'))return'PHIL';
+  if(c.includes('social'))return'SS';
+  if(c.includes('current'))return'CE';
+  if(c.includes('geo'))return'GEO';
+  if(c.includes('pop')||c.includes('trash'))return'TRASH';
+  return'OTHER';
+}
+
+// ── STATE ────────────────────────────────────────────────────────
+let currentQ=null,words=[],sentences=[],wordIdx=0,readTimer=null,isPaused=false;
+let isBuzzed=false,isFinished=false,buzzWordIdx=-1,powerIdx=-1,isFetching=false,answerSubmitted=false;
+let resultCorrect=null,resultIsPower=false;
+let score={pow:0,get:0,neg:0,tu:0,celSum:0,celCount:0,total:0};
+let qLog=[];
+let ansTimerInterval=null,ansTimerStart=null;
+const TIMER_MS=10000;
+
+// ── FETCH ────────────────────────────────────────────────────────
+async function fetchAndStart(){
+  if(isFetching)return;
+  isFetching=true;
+  stopReading();clearAnsTimer();
+  isBuzzed=false;isFinished=false;buzzWordIdx=-1;resultCorrect=null;answerSubmitted=false;
+  document.getElementById('buzzArea').classList.remove('visible');
+  document.getElementById('resultRow').classList.remove('visible');
+  document.getElementById('answerlineBox').style.display='none';
+  document.getElementById('qText').innerHTML='';
+  document.getElementById('qMeta').innerHTML='';
+  document.getElementById('qStatus').innerHTML='<span class="ready">Fetching...</span>';
+  const biReset=document.getElementById('buzzInput');
+  biReset.disabled=false;biReset.style.opacity='1';biReset.style.cursor='';biReset.value='';
+  try{
+    const subs=getChecked('subDrop'),diffs=getChecked('diffDrop');
+    const yFrom=parseInt(document.getElementById('yearFrom').value)||2000;
+    const yTo=parseInt(document.getElementById('yearTo').value)||2026;
+    let url='https://www.qbreader.org/api/random-tossup?number=1';
+    if(subs.length)url+='&categories='+subs.map(encodeURIComponent).join(',');
+    if(diffs.length)url+='&difficulties='+diffs.join(',');
+    if(yFrom>2000||yTo<2026)url+='&minYear='+yFrom+'&maxYear='+yTo;
+    const resp=await fetch(url);
+    if(!resp.ok)throw new Error('HTTP '+resp.status);
+    const data=await resp.json();
+    const tu=Array.isArray(data.tossups)?data.tossups[0]:data;
+    if(!tu||!tu.question)throw new Error('No question');
+    currentQ=tu;parseQ(tu);renderMeta(tu);
+    document.getElementById('qStatus').innerHTML='';
+    isFetching=false;startReading();
+  }catch(e){
+    document.getElementById('qStatus').innerHTML='<span style="color:var(--red)">Failed to fetch. Check connection.</span>';
+    isFetching=false;
+  }
+}
+
+function parseQ(tu){
+  const raw=stripHTML(tu.question_sanitized||tu.question||'');
+  sentences=raw.split(/(?<=[.!?])\s+/).map(s=>s.trim()).filter(s=>s.length>0);
+  words=raw.split(/\s+/);
+  powerIdx=-1;let wc=0;
+  sentences.forEach(sent=>{const sw=sent.split(/\s+/);if(sent.includes('(*)'))powerIdx=wc+sw.findIndex(w=>w.includes('(*)'));wc+=sw.length;});
+  wordIdx=0;
+}
+
+function renderMeta(tu){
+  const sub=subKey(tu.category||tu.subcategory||'');
+  document.getElementById('qMeta').innerHTML=`<span>${sub}</span><span>${tu.difficulty||''}</span><span style="max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${tu.tournament||''}</span>`;
+}
+
+// ── READING ──────────────────────────────────────────────────────
+function startReading(){
+  if(!currentQ||isBuzzed||isFinished)return;
+  isPaused=false;
+  const wpm=parseInt(document.getElementById('wpmSlider').value);
+  clearInterval(readTimer);
+  readTimer=setInterval(()=>{
+    if(isPaused||isBuzzed||isFinished)return;
+    if(wordIdx>=words.length){finishReading();return;}
+    wordIdx++;renderReading();
+  },60000/wpm);
+}
+function stopReading(){clearInterval(readTimer);readTimer=null;}
+function togglePause(){
+  if(!currentQ||isBuzzed||isFinished)return;
+  isPaused=!isPaused;
+  if(!isPaused)startReading();
+  document.getElementById('qStatus').innerHTML=isPaused?'<span style="color:var(--yellow)">Paused — press P to resume</span>':'';
+}
+
+function finishReading(){
+  stopReading();isFinished=true;wordIdx=words.length;
+  // Don't reveal question/answer yet — wait for submit
+  // Just show buzz area
+  if(!answerSubmitted){
+    document.getElementById('buzzArea').classList.add('visible');
+    document.getElementById('buzzInput').value='';
+    document.getElementById('buzzInput').focus();
+    if(document.getElementById('timerToggle').checked)startAnsTimer();
+    // No timer = stays open indefinitely until Enter
+  }
+}
+
+function renderReading(){
+  const sub=subKey(currentQ?.category||'');
+  const ans=getAnswerText(currentQ?.answer||'');
+  let html='';let gc=0;
+  sentences.forEach((sent)=>{
+    const sw=sent.split(/\s+/);
+    const sentStart=gc;const sentEnd=gc+sw.length;
+    const knownClues=findClueParts(sent,sub,ans);
+    let sentHtml='';
+    sw.forEach((word,wi)=>{
+      const gi=sentStart+wi;
+      const show=gi<wordIdx;
+      let w=word.replace(/\(\*\)/g,'');
+      if(!show){sentHtml+=`<span class="w-hidden">${w||'·'} </span>`;return;}
+      // Only highlight clue words that have already been read
+      const wordClean=word.toLowerCase().replace(/[^a-z0-9\s]/g,'');
+      const isClueWord=knownClues.some(cl=>cl.text.toLowerCase().split(/\s+/).some(cw=>cw.length>2&&wordClean.includes(cw)));
+      sentHtml+=isClueWord
+        ?`<span class="w-read clue-ul">${w} </span>`
+        :`<span class="w-read">${w} </span>`;
+    });
+    html+=sentHtml;
+    gc+=sw.length;
+  });
+  document.getElementById('qText').innerHTML=html;
+}
+
+function renderPost(){
+  const sub=subKey(currentQ?.category||'');
+  const ans=getAnswerText(currentQ?.answer||'');
+  let html='';let gc=0;
+  sentences.forEach((sent,si)=>{
+    const sw=sent.split(/\s+/);
+    const sentStart=gc;
+    const knownClues=findClueParts(sent,sub,ans);
+    let sentHtml='';
+    sw.forEach((word,wi)=>{
+      const gi=sentStart+wi;
+      let w=word.replace(/\(\*\)/g,'<span class="power-w">(*)</span>');
+      if(gi===buzzWordIdx)sentHtml+=`<span class="buzz-mark">(#) </span>`;
+      const wordClean=word.toLowerCase().replace(/[^a-z0-9\s]/g,'');
+      const isClueWord=knownClues.some(cl=>cl.text.toLowerCase().split(/\s+/).some(cw=>cw.length>2&&wordClean.includes(cw)));
+      sentHtml+=isClueWord?`<span class="w-read clue-ul">${w} </span>`:`<span class="w-read">${w} </span>`;
+    });
+    const esc=sent.replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;');
+    const btnHtml=`<button class="add-clue-btn" id="clueBtn${si}" onclick="openAddCluePopup('${esc}',${si})" title="Add clue">+</button>`;
+    html+=`${sentHtml}${btnHtml} `;
+    gc+=sw.length;
+  });
+  document.getElementById('qText').innerHTML=html;
+}
+
+function findClueParts(sent,sub,ans){
+  const data=clueCache[sub]||{};
+  // Case-insensitive exact match on answer key
+  const ansLower=ans.toLowerCase().trim();
+  const matchKey=Object.keys(data).find(k=>k.toLowerCase().trim()===ansLower);
+  if(!matchKey)return[];
+  // Check if any stored clue text appears in the sentence
+  return data[matchKey].clues.filter(c=>sent.toLowerCase().includes(c.text.toLowerCase().trim()));
+}
+function showAnswerline(){document.getElementById('answerlineBox').style.display='block';document.getElementById('answerlineText').textContent=getAnswerText(currentQ.answer);}
+
+// ── ANSWER TIMER ─────────────────────────────────────────────────
+function startAnsTimer(){
+  clearAnsTimer();
+  document.getElementById('timerBarWrap').classList.add('visible');
+  ansTimerStart=Date.now();
+  ansTimerInterval=setInterval(()=>{
+    const rem=Math.max(0,TIMER_MS-(Date.now()-ansTimerStart));
+    const pct=rem/TIMER_MS*100;
+    document.getElementById('timerFill').style.width=pct+'%';
+    document.getElementById('timerFill').style.background=pct<30?'var(--red)':pct<60?'var(--yellow)':'var(--accent)';
+    document.getElementById('timerCountdown').textContent=(rem/1000).toFixed(1);
+    document.getElementById('timerCountdown').style.color=pct<30?'var(--red)':pct<60?'var(--yellow)':'var(--accent)';
+    if(rem<=0){clearAnsTimer();submitAnswer();}
+  },50);
+}
+function clearAnsTimer(){clearInterval(ansTimerInterval);ansTimerInterval=null;document.getElementById('timerBarWrap').classList.remove('visible');}
+
+// ── BUZZ ─────────────────────────────────────────────────────────
+function buzz(){
+  if(!currentQ||isBuzzed||isFinished||answerSubmitted)return;
+  stopReading();isBuzzed=true;buzzWordIdx=wordIdx;
+  document.getElementById('buzzArea').classList.add('visible');
+  document.getElementById('buzzInput').value='';
+  document.getElementById('buzzInput').focus();
+  if(document.getElementById('timerToggle').checked)startAnsTimer();
+}
+
+// ── SUBMIT ───────────────────────────────────────────────────────
+function submitAnswer(){
+  if(answerSubmitted)return;
+  answerSubmitted=true;
+  clearAnsTimer();
+  const typed=document.getElementById('buzzInput').value.trim();
+  const correct=typed?checkAnswer(typed,currentQ.answer):false;
+  resultCorrect=correct;
+  resultIsPower=powerIdx>=0&&buzzWordIdx>=0&&buzzWordIdx<=powerIdx;
+  let pts=0,badge='',badgeCls='';
+  if(correct){
+    if(resultIsPower){pts=15;badge='+15 POWER';badgeCls='rb-pow';score.pow++;}
+    else{pts=10;badge='+10';badgeCls='rb-cor';score.get++;}
+    if(buzzWordIdx>=0&&buzzWordIdx<words.length){score.celSum+=(1-buzzWordIdx/words.length);score.celCount++;}
+  }else{pts=-5;badge='-5';badgeCls='rb-inc';score.neg++;}
+  score.tu++;score.total+=pts;updateScoreBar();
+
+  document.getElementById('resultBadge').textContent=badge;
+  document.getElementById('resultBadge').className='result-badge '+badgeCls;
+  document.getElementById('typedAns').innerHTML=typed?`You answered: <span>${typed}</span>`:'<span style="color:var(--text2)">No answer given</span>';
+  const tb=document.getElementById('toggleJudgeBtn');
+  tb.textContent=correct?'Mark as Incorrect':'Mark as Correct';
+  tb.style.borderColor=correct?'var(--green)':'var(--red)';
+  tb.style.color=correct?'var(--green)':'var(--red)';
+  document.getElementById('resultRow').classList.add('visible');
+  const bi=document.getElementById('buzzInput');
+  bi.disabled=true;bi.style.opacity='0.5';bi.style.cursor='not-allowed';
+  isFinished=true;isBuzzed=false;
+  renderPost();showAnswerline();
+  const rt=correct?(resultIsPower?'p15':'g10'):(typed?'m5':'dead');
+  addLog(rt,typed,buzzWordIdx);
+  // Track misses: if wrong/dead, find clues that were read >3 words before buzz (or end)
+  if(!correct){
+    recordClueMissesForQ(buzzWordIdx>=0?buzzWordIdx:words.length);
+  }
+}
+
+function toggleJudge(){
+  const tb=document.getElementById('toggleJudgeBtn');
+  const wasCorrect=resultCorrect;
+  const nowCorrect=!wasCorrect;
+  resultCorrect=nowCorrect;
+  const isPow=resultIsPower;
+  const oldPts=wasCorrect?(isPow?15:10):-5;
+  const newPts=nowCorrect?(isPow?15:10):-5;
+  score.total+=newPts-oldPts;
+  if(wasCorrect){if(isPow)score.pow--;else score.get--;score.neg++;}
+  else{score.neg--;if(isPow)score.pow++;else score.get++;}
+  if(nowCorrect&&buzzWordIdx>=0&&buzzWordIdx<words.length){score.celSum+=(1-buzzWordIdx/words.length);score.celCount++;}
+  else if(wasCorrect&&buzzWordIdx>=0&&buzzWordIdx<words.length){score.celSum-=(1-buzzWordIdx/words.length);score.celCount=Math.max(0,score.celCount-1);}
+  updateScoreBar();
+  const badge=nowCorrect?(isPow?'+15 POWER':'+10'):'-5';
+  const badgeCls=nowCorrect?(isPow?'rb-pow':'rb-cor'):'rb-inc';
+  document.getElementById('resultBadge').textContent=badge;
+  document.getElementById('resultBadge').className='result-badge '+badgeCls;
+  tb.textContent=nowCorrect?'Mark as Incorrect':'Mark as Correct';
+  tb.style.borderColor=nowCorrect?'var(--green)':'var(--red)';
+  tb.style.color=nowCorrect?'var(--green)':'var(--red)';
+  if(qLog.length){
+    qLog[0].resultType=nowCorrect?(isPow?'p15':'g10'):(qLog[0].typed?'m5':'dead');
+    qLog[0].pts=nowCorrect?(isPow?'+15 POWER':'+10'):'-5';
+    renderLog();
+  }
+  // Patch the most recent stats record to match the new judgment
+  if(statsResults.length){
+    const last=statsResults[statsResults.length-1];
+    const newRt=nowCorrect?(isPow?'p15':'g10'):(qLog[0]?.typed?'m5':'dead');
+    const newPtsVal=nowCorrect?(isPow?15:10):-5;
+    last.rt=newRt;
+    last.pts=newPtsVal;
+    // Persist the update
+    try{dbPut('results',last);}catch(e){}
+  }
+}
+
+// ── CLUE MISS TRACKING ───────────────────────────────────────────
+// When a question finishes wrong/dead, any clue word that was read
+// 3+ words BEFORE the buzz (or end-of-question) counts as a miss.
+async function recordClueMissesForQ(buzzAtWord){
+  if(!currentQ)return;
+  const sub=subKey(currentQ.category||'');
+  const ans=getAnswerText(currentQ.answer);
+  const entry=clueCache[sub]?.[ans];
+  if(!entry)return;
+  let changed=false;
+  // Walk sentences and find clue word positions
+  let gc=0;
+  sentences.forEach(sent=>{
+    const sw=sent.split(/\s+/);
+    const sentStart=gc;
+    entry.clues.forEach(clue=>{
+      // Find the last word of this clue in the sentence
+      if(!sent.toLowerCase().includes(clue.text.toLowerCase().trim()))return;
+      // Find approx position: use mid-point of clue words in sentence
+      const clueWords=clue.text.toLowerCase().split(/\s+/).filter(w=>w.length>1);
+      // Find position of first clue word in sentence
+      let clueWordPos=sentStart;
+      sw.forEach((w,wi)=>{
+        if(clueWords.some(cw=>w.toLowerCase().includes(cw)))clueWordPos=sentStart+wi;
+      });
+      // If clue was fully read and buzz happened 3+ words after clue position
+      if(clueWordPos<buzzAtWord&&(buzzAtWord-clueWordPos)>=3){
+        clue.misses++;changed=true;
+      }
+    });
+    gc+=sw.length;
+  });
+  if(changed){
+    entry.totalMisses=entry.clues.reduce((s,c)=>s+c.misses,0);
+    await saveClueRec(sub,ans);
+  }
+}
+
+function updateScoreBar(){
+  document.getElementById('sPow').textContent=score.pow;
+  document.getElementById('sGet').textContent=score.get;
+  document.getElementById('sNeg').textContent=score.neg;
+  document.getElementById('sTU').textContent=score.tu;
+  document.getElementById('sTotal').textContent=score.total;
+  const cel=score.celCount>0?(score.celSum/score.celCount).toFixed(3):'—';
+  document.getElementById('sCel').textContent=cel;
+}
+
+// ── LOG ──────────────────────────────────────────────────────────
+function addLog(rt,typed,bwi){
+  const ans=getAnswerText(currentQ.answer);
+  const sub=subKey(currentQ.category||'');
+  const rawSubcat=currentQ.subcategory||currentQ.sub_category||'';
+  const cel=bwi!==null&&bwi>=0&&bwi<words.length?(1-bwi/words.length).toFixed(3):null;
+  const pts=rt==='p15'?'+15 POWER':rt==='g10'?'+10':rt==='m5'?'-5':'Dead';
+  const tournament=currentQ.tournament||currentQ.set?.name||'';
+  const year=currentQ.year||currentQ.set?.year||'';
+  const tuNum=currentQ.number||currentQ.tossup_number||'';
+  const ts=Date.now();
+  const entry={ans,sub,subcat:rawSubcat,diff:currentQ.difficulty||'',resultType:rt,typed,pts,cel,q:currentQ,bwi,tournament,year,tuNum,ts};
+  qLog.unshift(entry);
+  renderLog();
+  saveSessionResult({ans,sub,subcat:rawSubcat,diff:currentQ.difficulty||'',rt,cel:cel?parseFloat(cel):null,pts:rt==='p15'?15:rt==='g10'?10:rt==='m5'?-5:0,ts});
+  savePlogEntry({...entry,id:ts+'_'+Math.random().toString(36).slice(2)});
+}
+
+function renderLog(){
+  const c=document.getElementById('questionLog');
+  if(!qLog.length){c.innerHTML='';return;}
+  c.innerHTML=qLog.map((item,i)=>{
+    const badgeCls=item.resultType==='p15'?'lb-p':item.resultType==='g10'?'lb-c':item.resultType==='m5'?'lb-w':'lb-d';
+    return`<div class="log-item" onclick="toggleLog(${i})">
+      <div class="log-header">
+        <span class="log-answer">${item.ans}</span>
+        <div class="log-right">
+          <span class="log-meta-row">${item.sub} · ${item.diff}</span>
+          <span class="log-badge ${badgeCls}">${item.pts}</span>
+        </div>
+      </div>
+      <div class="log-expand" id="le${i}">
+        <div class="log-detail">
+          ${item.cel?`<span><span class="ld-label">Celerity</span><span class="ld-val">${item.cel}</span></span>`:''}
+          ${item.tournament?`<span><span class="ld-label">Packet</span><span class="ld-val">${item.tournament}</span></span>`:''}
+          ${item.year?`<span><span class="ld-label">Year</span><span class="ld-val">${item.year}</span></span>`:''}
+          ${item.tuNum?`<span><span class="ld-label">Tossup #</span><span class="ld-val">${item.tuNum}</span></span>`:''}
+        </div>
+        <div class="log-q-text" id="lqt${i}">${formatLogQWithBtns(item,i)}</div>
+        <div class="log-al">ANSWER: <span>${item.ans}</span></div>
+        ${item.typed?`<div class="log-typed">You answered: <span>${item.typed}</span></div>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function formatLogQWithBtns(item,logIdx){
+  const raw=stripHTML(item.q.question_sanitized||item.q.question||'');
+  const sents=raw.split(/(?<=[.!?])\s+/).map(s=>s.trim()).filter(s=>s.length>0);
+  return sents.map((sent,si)=>{
+    const esc=sent.replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;');
+    const spanText=sent.replace(/\(\*\)/g,'<span class="power-w">(*)</span>');
+    const btnId=`logBtn${logIdx}_${si}`;
+    return`${spanText}<button class="add-clue-btn" id="${btnId}" onclick="openAddCluePopupFromLog(event,'${esc}',${logIdx})" title="Add clue">+</button> `;
+  }).join('');
+}
+
+function toggleLog(i){document.getElementById('le'+i).classList.toggle('open');}
+
+// ── ADD CLUE FROM LOG ────────────────────────────────────────────
+let logClueContext=null; // {logIdx, sent}
+function openAddCluePopupFromLog(ev,sent,logIdx){
+  ev.stopPropagation();
+  logClueContext={logIdx,sent};
+  // Temporarily set currentQ to the log item's question so confirmAddClue works
+  currentQ=qLog[logIdx].q;
+  cpSent=sent;cpSentIdx=-1;
+  document.getElementById('addClueSent').textContent=sent;
+  document.getElementById('cpWholeSub').textContent=sent.length>80?sent.substring(0,80)+'...':sent;
+  document.getElementById('cpCustomInput').value='';
+  document.getElementById('cpCustomInput').style.display='none';
+  document.querySelector('input[name="cpChoice"][value="whole"]').checked=true;
+  document.getElementById('dupWarning').classList.remove('visible');
+  checkDupWarning();
+  document.getElementById('addClueOverlay').classList.add('open');
+}
+function openAddCluePopup(sent,idx){
+  logClueContext=null;
+  cpSent=sent;cpSentIdx=idx;
+  document.getElementById('addClueSent').textContent=sent;
+  document.getElementById('cpWholeSub').textContent=sent.length>80?sent.substring(0,80)+'...':sent;
+  document.getElementById('cpCustomInput').value='';
+  document.getElementById('cpCustomInput').style.display='none';
+  document.querySelector('input[name="cpChoice"][value="whole"]').checked=true;
+  document.getElementById('dupWarning').classList.remove('visible');
+  checkDupWarning();
+  document.getElementById('addClueOverlay').classList.add('open');
+}
+function checkDupWarning(){
+  if(!currentQ)return;
+  const sub=subKey(currentQ.category||'');
+  const ans=getAnswerText(currentQ.answer);
+  const choice=document.querySelector('input[name="cpChoice"]:checked')?.value;
+  const text=choice==='custom'?document.getElementById('cpCustomInput').value.trim():cpSent;
+  const w=document.getElementById('dupWarning');
+  const dup=findDuplicateClue(sub,ans,text);
+  if(dup){w.textContent=`⚠ Similar clue already exists: "${dup}"`;w.classList.add('visible');}
+  else{w.classList.remove('visible');}
+}
+function checkNewDup(){
+  const sub=document.getElementById('newClueSub').value;
+  const ans=document.getElementById('newClueAnswer').value.trim();
+  const text=document.getElementById('newClueText').value.trim();
+  const w=document.getElementById('newDupWarning');
+  if(!ans||!text){w.classList.remove('visible');return;}
+  const dup=findDuplicateClue(sub,ans,text);
+  if(dup){w.textContent=`⚠ Similar clue already exists: "${dup}"`;w.classList.add('visible');}
+  else{w.classList.remove('visible');}
+}
+function findDuplicateClue(sub,ans,text){
+  if(!text||text.length<3)return null;
+  // Check all answer entries case-insensitively
+  const subData=clueCache[sub]||{};
+  const ansLower=ans.toLowerCase().trim();
+  const matchKey=Object.keys(subData).find(k=>k.toLowerCase().trim()===ansLower);
+  const entry=matchKey?subData[matchKey]:null;
+  if(!entry)return null;
+  const t=text.toLowerCase().trim();
+  const exact=entry.clues.find(c=>c.text.toLowerCase().trim()===t);
+  if(exact)return exact.text;
+  const similar=entry.clues.find(c=>sim(c.text,text)>=0.7);
+  if(similar)return similar.text;
+  return null;
+}
+function cpToggle(){
+  const v=document.querySelector('input[name="cpChoice"]:checked').value;
+  document.getElementById('cpCustomInput').style.display=v==='custom'?'block':'none';
+  if(v==='custom')document.getElementById('cpCustomInput').focus();
+  checkDupWarning();
+}
+async function confirmAddClue(){
+  if(!currentQ)return;
+  const sub=subKey(currentQ.category||'');
+  const ans=getAnswerText(currentQ.answer);
+  const choice=document.querySelector('input[name="cpChoice"]:checked').value;
+  const text=choice==='custom'?document.getElementById('cpCustomInput').value.trim():cpSent;
+  if(!text){showToast('Please enter a clue');return;}
+  const added=await addClue(sub,ans,text);
+  await syncFC(sub,ans,text);
+  closePopup('addClueOverlay');
+  const btn=document.getElementById('clueBtn'+cpSentIdx);
+  if(btn){btn.classList.add('added');btn.textContent='✓';}
+  showToast(added?'Clue added!':'Already exists');
+}
+
+// ── EDIT CLUE POPUP ──────────────────────────────────────────────
+let editSub='',editAns='',editIdx=-1;
+function openEditCluePopup(sub,ans,idx){
+  editSub=sub;editAns=ans;editIdx=idx;
+  const clue=clueCache[sub]?.[ans]?.clues[idx];
+  if(!clue)return;
+  document.getElementById('editClueText').value=clue.text;
+  document.getElementById('editMissCount').value=clue.misses;
+  document.getElementById('editClueOverlay').classList.add('open');
+}
+async function confirmEditClue(){
+  const newText=document.getElementById('editClueText').value.trim();
+  const newMiss=parseInt(document.getElementById('editMissCount').value)||0;
+  if(!newText){showToast('Clue text cannot be empty');return;}
+  const entry=clueCache[editSub]?.[editAns];
+  if(!entry)return;
+  entry.clues[editIdx].text=newText;
+  entry.clues[editIdx].misses=newMiss;
+  entry.totalMisses=entry.clues.reduce((s,c)=>s+c.misses,0);
+  await saveClueRec(editSub,editAns);
+  closePopup('editClueOverlay');
+  renderClues();showToast('Clue updated!');
+}
+async function deleteClue(){
+  const entry=clueCache[editSub]?.[editAns];
+  if(!entry)return;
+  entry.clues.splice(editIdx,1);
+  entry.totalMisses=entry.clues.reduce((s,c)=>s+c.misses,0);
+  await saveClueRec(editSub,editAns);
+  closePopup('editClueOverlay');
+  renderClues();showToast('Clue deleted!');
+}
+function closePopup(id){document.getElementById(id).classList.remove('open');}
+
+// ── EDIT / DELETE ANSWER LINE ────────────────────────────────────
+let editAnsSub='',editAnsOld='';
+function openEditAnsPopup(sub,ans){
+  editAnsSub=sub;editAnsOld=ans;
+  document.getElementById('editAnsText').value=ans;
+  // Populate subject dropdown with all known subs
+  const allSubs=[...new Set([...SUBS,...Object.keys(clueCache)])].filter(s=>s);
+  document.getElementById('editAnsSub').innerHTML=allSubs.map(s=>`<option value="${s}" ${s===sub?'selected':''}>${s}</option>`).join('');
+  document.getElementById('editAnsOverlay').classList.add('open');
+  setTimeout(()=>document.getElementById('editAnsText').focus(),80);
+}
+async function confirmEditAns(){
+  const newText=document.getElementById('editAnsText').value.trim();
+  const newSub=document.getElementById('editAnsSub').value;
+  if(!newText){showToast('Answer text cannot be empty');return;}
+  const entry=clueCache[editAnsSub]?.[editAnsOld];
+  if(!entry){closePopup('editAnsOverlay');return;}
+  // Move to new sub if changed
+  if(newSub!==editAnsSub){
+    if(!clueCache[newSub])clueCache[newSub]={};
+    // If target already has this answer, merge clues
+    if(clueCache[newSub][newText]){
+      clueCache[newSub][newText].clues.push(...entry.clues.filter(nc=>!clueCache[newSub][newText].clues.some(ec=>ec.text===nc.text)));
+    }else{
+      clueCache[newSub][newText]=entry;
+    }
+    clueCache[newSub][newText].totalMisses=clueCache[newSub][newText].clues.reduce((s,c)=>s+c.misses,0);
+    // Remove old
+    delete clueCache[editAnsSub][editAnsOld];
+    // Delete old DB record, save new
+    await dbDelete('clues',editAnsSub+'||'+editAnsOld);
+    await saveClueRec(newSub,newText);
+    // Update flashcard subjects/answers
+    await migrateFlashcards(editAnsSub,editAnsOld,newSub,newText);
+  } else if(newText!==editAnsOld){
+    // Rename within same subject
+    clueCache[editAnsSub][newText]=entry;
+    delete clueCache[editAnsSub][editAnsOld];
+    await dbDelete('clues',editAnsSub+'||'+editAnsOld);
+    await saveClueRec(editAnsSub,newText);
+    await migrateFlashcards(editAnsSub,editAnsOld,editAnsSub,newText);
+  }
+  closePopup('editAnsOverlay');
+  renderClues();showToast('Answer line updated!');
+}
+async function migrateFlashcards(oldSub,oldAns,newSub,newAns){
+  const prefix=oldSub+'||'+oldAns+'||';
+  const toMigrate=fcCache.filter(c=>c.id.startsWith(prefix));
+  for(const c of toMigrate){
+    const clueText=c.clue;
+    const newId=newSub+'||'+newAns+'||'+clueText;
+    await dbDelete('flashcards',c.id);
+    c.id=newId;c.subject=newSub;c.answer=newAns;
+    await dbPut('flashcards',c);
+  }
+}
+async function deleteAnswerLine(){
+  closePopup('editAnsOverlay');
+  pendingConfirm={type:'ans',sub:editAnsSub,ans:editAnsOld};
+  showConfirm('Delete Answer Line?',`This will delete "${editAnsOld}" and all its clues. This cannot be undone.`,'Delete');
+}
+async function _doDeleteAns(sub,ans){
+  if(!clueCache[sub]?.[ans])return;
+  // Delete flashcards
+  const prefix=sub+'||'+ans+'||';
+  const toDelete=fcCache.filter(c=>c.id.startsWith(prefix));
+  for(const c of toDelete){await dbDelete('flashcards',c.id);}
+  fcCache=fcCache.filter(c=>!c.id.startsWith(prefix));
+  await dbDelete('clues',sub+'||'+ans);
+  delete clueCache[sub][ans];
+  if(Object.keys(clueCache[sub]).length===0)delete clueCache[sub];
+  renderClues();showToast('Answer line deleted.');
+}
+
+// ── EDIT / DELETE SUBJECT ────────────────────────────────────────
+let editSubOld='';
+function openEditSubPopup(sub){
+  editSubOld=sub;
+  document.getElementById('editSubKey').value=sub;
+  document.getElementById('editSubOverlay').classList.add('open');
+  setTimeout(()=>document.getElementById('editSubKey').focus(),80);
+}
+async function confirmEditSub(){
+  const newKey=document.getElementById('editSubKey').value.trim().toUpperCase().replace(/\s+/g,'_');
+  if(!newKey){showToast('Subject key cannot be empty');return;}
+  if(newKey===editSubOld){closePopup('editSubOverlay');return;}
+  if(clueCache[newKey]){showToast('Subject key already exists');return;}
+  // Move all entries
+  clueCache[newKey]=clueCache[editSubOld];
+  delete clueCache[editSubOld];
+  // Re-save DB
+  for(const ans of Object.keys(clueCache[newKey])){
+    await dbDelete('clues',editSubOld+'||'+ans);
+    await saveClueRec(newKey,ans);
+    await migrateFlashcards(editSubOld,ans,newKey,ans);
+  }
+  // Update SUBS if it was a default
+  if(!SUBS.includes(newKey))SUBS.push(newKey);
+  closePopup('editSubOverlay');
+  activeClueTab=newKey;
+  renderClues();showToast('Subject renamed!');
+}
+function deleteSubject(){
+  closePopup('editSubOverlay');
+  const count=Object.keys(clueCache[editSubOld]||{}).length;
+  pendingConfirm={type:'sub',sub:editSubOld};
+  showConfirm('Delete Subject?',`This will delete the subject "${editSubOld}" and all ${count} answer line(s) inside it. Cannot be undone.`,'Delete All');
+}
+async function _doDeleteSub(sub){
+  const answers=Object.keys(clueCache[sub]||{});
+  for(const ans of answers){await _doDeleteAns(sub,ans);}
+  // clueCache[sub] may already be cleaned up
+  delete clueCache[sub];
+  renderClues();showToast('Subject deleted.');
+}
+function confirmDeleteSubject(sub){
+  const count=Object.keys(clueCache[sub]||{}).length;
+  pendingConfirm={type:'sub',sub};
+  showConfirm('Delete Subject?',`Delete "${sub}" and all ${count} answer line(s)? Cannot be undone.`,'Delete All');
+}
+function confirmDeleteAns(sub,ans){
+  pendingConfirm={type:'ans',sub,ans};
+  showConfirm('Delete Answer Line?',`Delete "${ans}" and all its clues? Cannot be undone.`,'Delete');
+}
+
+// ── DB DELETE HELPER ─────────────────────────────────────────────
+function dbDelete(store,key){return new Promise((res,rej)=>{const tx=idb.transaction(store,'readwrite');tx.objectStore(store).delete(key).onsuccess=()=>res();tx.onerror=()=>rej(tx.error);});}
+
+// ── CONFIRM DIALOG ────────────────────────────────────────────────
+let pendingConfirm=null;
+function showConfirm(title,msg,yesLabel='Delete'){
+  document.getElementById('confirmTitle').textContent=title;
+  document.getElementById('confirmMsg').textContent=msg;
+  document.getElementById('confirmYesBtn').textContent=yesLabel;
+  document.getElementById('confirmOverlay').classList.add('open');
+}
+function confirmNo(){document.getElementById('confirmOverlay').classList.remove('open');pendingConfirm=null;}
+async function confirmYes(){
+  document.getElementById('confirmOverlay').classList.remove('open');
+  if(!pendingConfirm)return;
+  const p=pendingConfirm;pendingConfirm=null;
+  if(p.type==='ans')await _doDeleteAns(p.sub,p.ans);
+  if(p.type==='sub')await _doDeleteSub(p.sub);
+}
+
+// ── CLUES TAB ────────────────────────────────────────────────────
+const SUBS=['SCI','HIS','LIT','FA','REL','MYTH','PHIL','SS','CE','GEO','OTHER','TRASH'];
+let activeClueTab='';
+function renderClues(){
+  const bar=document.getElementById('clueTabsBar');
+  const panels=document.getElementById('clueTabPanels');
+  const subBar=document.getElementById('subjectEditBar');
+  const active=SUBS.filter(s=>clueCache[s]&&Object.keys(clueCache[s]).length>0);
+  if(!active.length){
+    bar.innerHTML='';panels.innerHTML='<div class="empty-state">No clues saved yet.</div>';
+    subBar.innerHTML='';return;
+  }
+  if(!activeClueTab||!active.includes(activeClueTab))activeClueTab=active[0];
+  // Subject management pills
+  subBar.innerHTML='<span style="font-size:11px;color:var(--text2);font-family:var(--mono);text-transform:uppercase;letter-spacing:.05em;margin-right:4px;align-self:center;">Subjects:</span>'+
+    active.map(s=>`<span class="sub-edit-pill">
+      <span class="sub-pill-name">${s}</span>
+      <button class="sub-pill-edit" onclick="openEditSubPopup('${s}')" title="Rename subject">✏</button>
+      <button class="sub-pill-del" onclick="confirmDeleteSubject('${s}')" title="Delete subject">✕</button>
+    </span>`).join('');
+  bar.innerHTML=active.map(s=>`<div class="clue-tab-btn ${s===activeClueTab?'active':''}" onclick="switchClueTab('${s}',this)">${s}</div>`).join('');
+  panels.innerHTML=active.map(s=>`<div class="clue-subject-panel ${s===activeClueTab?'active':''}" id="cp-${s}">${renderSubClues(s,'')}</div>`).join('');
+}
+function renderSubClues(sub,filter){
+  const data=clueCache[sub]||{};
+  let answers=Object.keys(data).sort((a,b)=>a.localeCompare(b));
+  if(filter)answers=answers.filter(a=>a.toLowerCase().includes(filter.toLowerCase()));
+  if(!answers.length)return'<div class="empty-state">No matching answers.</div>';
+  return answers.map(ans=>{
+    const e=data[ans];
+    const sortedClues=[...e.clues].sort((a,b)=>a.text.localeCompare(b.text));
+    const rows=sortedClues.map((c,ci)=>{
+      const origIdx=e.clues.indexOf(c);
+      const safeAns=ans.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+      return`<div class="clue-row">
+        <span class="clue-text-cell">${c.text}</span>
+        <span class="clue-miss ${c.misses>0?'cm-has':'cm-no'}">${c.misses}</span>
+        <button class="edit-clue-btn" onclick="openEditCluePopup('${sub}','${safeAns}',${origIdx})" title="Edit clue">✏️</button>
+      </div>`;
+    }).join('');
+    const safeAns=ans.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    return`<div class="ans-section"><div class="ans-header" onclick="toggleAns(this)">
+      <span class="ans-name">${ans}</span>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div class="ans-stats"><span>${e.clues.length} clues</span><span class="ans-total-miss">Total misses: ${e.totalMisses||0}</span></div>
+        <div class="ans-header-actions" onclick="event.stopPropagation()">
+          <button class="ans-edit-btn" onclick="openEditAnsPopup('${sub}','${safeAns}')" title="Edit answer line">✏️</button>
+          <button class="ans-del-btn" onclick="confirmDeleteAns('${sub}','${safeAns}')" title="Delete answer line">🗑</button>
+        </div>
+      </div>
+    </div><div class="ans-clues">${rows}</div></div>`;
+  }).join('');
+}
+function switchClueTab(sub,el){
+  activeClueTab=sub;
+  document.querySelectorAll('.clue-tab-btn').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.clue-subject-panel').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('cp-'+sub).classList.add('active');
+}
+function toggleAns(el){el.nextElementSibling.classList.toggle('open');}
+function filterClues(){
+  const q=document.getElementById('clueSearch').value;
+  const active=SUBS.filter(s=>clueCache[s]&&Object.keys(clueCache[s]).length>0);
+  active.forEach(s=>{
+    const panel=document.getElementById('cp-'+s);
+    if(panel)panel.innerHTML=renderSubClues(s,q);
+  });
+}
+
+// ── ANKI EXPORT ──────────────────────────────────────────────────
+// One card per clue. Front = clue text. Back = answer.
+function exportAnki(){
+  let lines=[];
+  SUBS.forEach(sub=>{
+    const data=clueCache[sub]||{};
+    Object.entries(data).forEach(([ans,e])=>{
+      e.clues.forEach(c=>{
+        lines.push(c.text+'\t'+ans);
+      });
+    });
+  });
+  if(!lines.length){showToast('No clues to export');return;}
+  const header='#separator:Tab\n#html:false\n#notetype:Basic\n#deck:QB Study\n';
+  const blob=new Blob([header+lines.join('\n')],{type:'text/plain'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='qb_anki_export.txt';
+  a.click();
+  showToast(`Exported ${lines.length} cards for Anki`);
+}
+
+// ── ANKI IMPORT ──────────────────────────────────────────────────
+// Accepts Anki tab-separated export: Front\tBack
+// Front = clue text(s) separated by <br> or newlines. Back = answer.
+function importAnki(){
+  const inp=document.createElement('input');inp.type='file';inp.accept='.txt,.tsv,.csv';
+  inp.onchange=async e=>{
+    const f=e.target.files[0];if(!f)return;
+    try{
+      const text=await f.text();
+      const lines=text.split('\n');
+      let imported=0,skipped=0;
+      for(const line of lines){
+        if(line.startsWith('#')||!line.trim())continue;
+        const parts=line.split('\t');
+        if(parts.length<2)continue;
+        const frontRaw=parts[0].trim();
+        const ans=parts[1].trim();
+        if(!frontRaw||!ans)continue;
+        // Detect subject from answer text
+        const sub=subKey(ans);
+        // Split front into individual clues (by <br>, <BR>, or actual newlines)
+        const clues=frontRaw.replace(/<br\s*\/?>/gi,'\n').split('\n').map(s=>s.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim()).filter(s=>s.length>2);
+        for(const clueText of clues){
+          const added=await addClue(sub,ans,clueText);
+          await syncFC(sub,ans,clueText);
+          if(added)imported++;else skipped++;
+        }
+      }
+      renderClues();
+      showToast(`Imported ${imported} clues, ${skipped} duplicates skipped`);
+    }catch(err){showToast('Import failed: '+err.message);}
+  };inp.click();
+}
+
+// ── STATS ENGINE ─────────────────────────────────────────────────
+// Persist each tossup result to IndexedDB 'results' store
+async function saveSessionResult(r){
+  const record={...r,id:r.ts+'_'+Math.random().toString(36).slice(2)};
+  statsResults.push(record);
+  try{await dbPut('results',record);}catch(e){console.error('Stats save failed',e);}
+}
+let statsResults=[];
+async function loadResults(){
+  try{statsResults=await dbGetAll('results');}catch(e){statsResults=[];}
+}
+
+let activeStatsTab='category';
+function switchStatsTab(tab,el){
+  activeStatsTab=tab;
+  document.querySelectorAll('.stats-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  document.querySelectorAll('.stats-panel-wrap').forEach(p=>p.classList.remove('active'));
+  document.getElementById('sp-'+tab).classList.add('active');
+  renderStatsTable(tab);
+}
+
+function renderStats(){
+  renderStatsTable(activeStatsTab);
+}
+
+function renderStatsTable(tab){
+  const isSub=(tab==='subcategory');
+  const bodyId=isSub?'statsSubBody':'statsCatBody';
+  const emptyId=isSub?'statsSubEmpty':'statsCatEmpty';
+  const body=document.getElementById(bodyId);
+  const empty=document.getElementById(emptyId);
+  if(!statsResults.length){body.innerHTML='';empty.style.display='block';return;}
+  empty.style.display='none';
+
+  // Group by category or subcategory
+  const groups={};
+  statsResults.forEach(r=>{
+    const key=isSub?(r.subcat||r.sub||'Unknown'):(r.sub||'Unknown');
+    if(!groups[key])groups[key]={heard:0,pow:0,get:0,neg:0,dead:0,celSum:0,celCount:0,pts:0};
+    const g=groups[key];
+    g.heard++;
+    if(r.rt==='p15'){g.pow++;g.pts+=15;}
+    else if(r.rt==='g10'){g.get++;g.pts+=10;}
+    else if(r.rt==='m5'){g.neg++;g.pts-=5;}
+    else{g.dead++;}
+    if(r.cel!=null){g.celSum+=r.cel;g.celCount++;}
+  });
+
+  const sorted=Object.entries(groups).sort((a,b)=>b[1].heard-a[1].heard);
+  body.innerHTML=sorted.map(([key,g])=>{
+    const getRate=g.heard>0?(((g.pow+g.get)/g.heard)*100).toFixed(0)+'%':'—';
+    const cel=g.celCount>0?(g.celSum/g.celCount).toFixed(3):'—';
+    return`<tr>
+      <td class="td-sub">${key}</td>
+      <td>${g.heard}</td>
+      <td class="td-pow">${g.pow}</td>
+      <td class="td-get">${g.get}</td>
+      <td class="td-neg">${g.neg}</td>
+      <td style="color:var(--text2)">${g.dead}</td>
+      <td>${getRate}</td>
+      <td class="td-cel">${cel}</td>
+      <td class="td-pts" style="color:${g.pts>=0?'var(--green)':'var(--red)'}">${g.pts>=0?'+':''}${g.pts}</td>
+    </tr>`;
+  }).join('');
+}
+function downloadJSON(){const blob=new Blob([JSON.stringify(clueCache,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='qb_clues.json';a.click();}
+function importJSON(){
+  const inp=document.createElement('input');inp.type='file';inp.accept='.json';
+  inp.onchange=async e=>{const f=e.target.files[0];if(!f)return;
+    try{const data=JSON.parse(await f.text());clueCache=data;
+      for(const[sub,answers]of Object.entries(data))for(const[ans,entry]of Object.entries(answers))await dbPut('clues',{id:sub+'||'+ans,subject:sub,answer:ans,clues:entry.clues,totalMisses:entry.totalMisses});
+      renderClues();showToast('Imported!');}catch(e){showToast('Import failed');}
+  };inp.click();
+}
+
+// ── FLASHCARDS ───────────────────────────────────────────────────
+// ── KEYBOARD ─────────────────────────────────────────────────────
+document.addEventListener('keydown',e=>{
+  const tag=document.activeElement.tagName.toLowerCase();
+  const inInput=tag==='input'||tag==='textarea';
+  if(inInput){
+    if(e.key==='Enter'&&document.activeElement.id==='buzzInput'){e.preventDefault();submitAnswer();}
+    return;
+  }
+  if(e.key==='s'||e.key==='S'){e.preventDefault();fetchAndStart();}
+  if(e.key==='n'||e.key==='N'){e.preventDefault();fetchAndStart();}
+  if(e.key==='p'||e.key==='P'){e.preventDefault();togglePause();}
+  if(e.code==='Space'){
+    e.preventDefault();
+    buzz();
+  }
+});
+
+// ── TOAST ────────────────────────────────────────────────────────
+let toastT;
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),2500);}
+
+
+// ── NEW CLUE FROM CLUES TAB ──────────────────────────────────────
+function openNewCluePopup(){
+  document.getElementById('newClueAnswer').value='';
+  document.getElementById('newClueText').value='';
+  document.getElementById('newClueOverlay').classList.add('open');
+  setTimeout(()=>document.getElementById('newClueAnswer').focus(),100);
+}
+async function confirmNewClue(){
+  const sub=document.getElementById('newClueSub').value;
+  const ans=document.getElementById('newClueAnswer').value.trim();
+  const text=document.getElementById('newClueText').value.trim();
+  if(!ans){showToast('Please enter an answer');return;}
+  if(!text){showToast('Please enter a clue');return;}
+  const added=await addClue(sub,ans,text);
+  await syncFC(sub,ans,text);
+  closePopup('newClueOverlay');
+  renderClues();
+  showToast(added?'Clue added!':'Clue already exists');
+}
+// ── INIT ─────────────────────────────────────────────────────────
+(async()=>{
+  const th=localStorage.getItem('qbTheme')||'dark';
+  document.body.dataset.theme=th;
+  document.querySelectorAll('.theme-btn').forEach(b=>{b.classList.toggle('active',b.textContent.toLowerCase()===th);});
+  await openDB();await loadClues();await loadFC();await backfillFC();await loadResults();await loadPlog();
+})();
+// ── PACKET LOG ────────────────────────────────────────────────────
+let plogEntries=[];
+
+async function savePlogEntry(entry){
+  plogEntries.unshift(entry);
+  try{await dbPut('plog',entry);}catch(e){console.error('plog save failed',e);}
+}
+
+async function loadPlog(){
+  try{
+    const all=await dbGetAll('plog');
+    plogEntries=all.sort((a,b)=>(b.ts||0)-(a.ts||0));
+  }catch(e){plogEntries=[];}
+}
+
+function renderPlog(){
+  const q=(document.getElementById('plogSearch')?.value||'').toLowerCase().trim();
+  const list=document.getElementById('plogList');
+  const countEl=document.getElementById('plogCount');
+  if(!list)return;
+
+  let filtered=plogEntries;
+  if(q){
+    filtered=plogEntries.filter(e=>
+      (e.ans||'').toLowerCase().includes(q)||
+      (e.tournament||'').toLowerCase().includes(q)||
+      (e.sub||'').toLowerCase().includes(q)||
+      (e.subcat||'').toLowerCase().includes(q)||
+      (e.year||'').toString().includes(q)
+    );
+  }
+
+  countEl.textContent=filtered.length+' tossup'+(filtered.length!==1?'s':'');
+
+  if(!filtered.length){
+    list.innerHTML=`<div class="plog-empty">${plogEntries.length?'No results match your search.':'No tossups played yet — head to the Reader!'}</div>`;
+    return;
+  }
+
+  // Group by answer line
+  const groups={};
+  filtered.forEach(item=>{
+    const key=item.ans||'Unknown';
+    if(!groups[key])groups[key]=[];
+    groups[key].push(item);
+  });
+  // Sort groups: most recent tossup first within group; groups sorted by most recent
+  const sortedGroups=Object.entries(groups).sort((a,b)=>(b[1][0].ts||0)-(a[1][0].ts||0));
+
+  list.innerHTML=sortedGroups.map(([ans,items],gi)=>{
+    const tuRows=items.map((item,ti)=>{
+      const plogIdx=plogEntries.indexOf(item);
+      const badgeCls=item.resultType==='p15'?'lb-p':item.resultType==='g10'?'lb-c':item.resultType==='m5'?'lb-w':'lb-d';
+      const tourLabel=item.tournament?`${item.tournament}${item.year?' ('+item.year+')':''}`:(item.year||'Unknown');
+      const meta=[item.sub,item.subcat,item.diff].filter(Boolean).join(' · ');
+      return`<div class="plog-tu">
+        <div class="plog-tu-header" onclick="togglePlogTu('g${gi}t${ti}')">
+          <div class="plog-tu-left">
+            <span class="plog-tu-tournament">${tourLabel}</span>
+            <span class="plog-tu-meta">${meta}</span>
+          </div>
+          <div class="plog-tu-right">
+            ${item.cel?`<span class="plog-info-val plog-cel">${item.cel}</span>`:''}
+            ${item.ts?`<span class="plog-tu-meta">${new Date(item.ts).toLocaleDateString()}</span>`:''}
+            <span class="plog-badge ${badgeCls}">${item.pts}</span>
+          </div>
+        </div>
+        <div class="plog-tu-body" id="g${gi}t${ti}">
+          <div class="plog-info-row">
+            ${item.tuNum?`<div class="plog-info-cell"><span class="plog-info-label">Tossup #</span><span class="plog-info-val">${item.tuNum}</span></div>`:''}
+            ${item.cel?`<div class="plog-info-cell"><span class="plog-info-label">Celerity</span><span class="plog-info-val plog-cel">${item.cel}</span></div>`:''}
+            ${item.typed?`<div class="plog-info-cell"><span class="plog-info-label">You said</span><span class="plog-info-val">${item.typed}</span></div>`:''}
+          </div>
+          ${renderPlogBuzzBar(item)}
+          <div class="plog-q-text">${formatPlogQ(item,plogIdx)}</div>
+          <div class="plog-answer-line">ANSWER: <span>${item.ans}</span></div>
+        </div>
+      </div>`;
+    }).join('');
+
+    // Summary badges for the group header
+    const pow=items.filter(i=>i.resultType==='p15').length;
+    const got=items.filter(i=>i.resultType==='g10').length;
+    const neg=items.filter(i=>i.resultType==='m5').length;
+    const dead=items.filter(i=>i.resultType==='dead').length;
+    const summaryBadges=[
+      pow?`<span class="plog-badge lb-p">${pow}×15</span>`:'',
+      got?`<span class="plog-badge lb-c">${got}×10</span>`:'',
+      neg?`<span class="plog-badge lb-w">${neg}×-5</span>`:'',
+      dead?`<span class="plog-badge lb-d">${dead} dead</span>`:'',
+    ].filter(Boolean).join('');
+
+    return`<div class="plog-group">
+      <div class="plog-group-header" onclick="togglePlogGroup('pg${gi}')">
+        <span class="plog-group-ans">${ans}</span>
+        <div style="display:flex;align-items:center;gap:8px;">
+          ${summaryBadges}
+          <span class="plog-group-count">${items.length} tossup${items.length!==1?'s':''}</span>
+        </div>
+      </div>
+      <div class="plog-group-body" id="pg${gi}">${tuRows}</div>
+    </div>`;
+  }).join('');
+}
+
+function togglePlogGroup(id){
+  const el=document.getElementById(id);
+  if(el)el.classList.toggle('open');
+}
+function togglePlogTu(id){
+  const el=document.getElementById(id);
+  if(el)el.classList.toggle('open');
+}
+
+function renderPlogBuzzBar(item){
+  if(!item.q)return'';
+  const raw=stripHTML(item.q.question_sanitized||item.q.question||'');
+  const totalWords=raw.split(/\s+/).filter(w=>w).length;
+  if(!totalWords)return'';
+
+  // Find power mark word index
+  const qRaw=item.q.question_sanitized||item.q.question||'';
+  const powerCharIdx=qRaw.indexOf('(*)');
+  let powerWordIdx=null;
+  if(powerCharIdx>0){
+    const beforePower=stripHTML(qRaw.substring(0,powerCharIdx));
+    powerWordIdx=beforePower.split(/\s+/).filter(w=>w).length;
+  }
+
+  const buzzAt=item.bwi>=0?item.bwi:null;
+  const buzzPct=buzzAt!==null?Math.min(100,(buzzAt/totalWords)*100):null;
+  const powerPct=powerWordIdx!==null?Math.min(100,(powerWordIdx/totalWords)*100):null;
+
+  const dotColor=item.resultType==='p15'?'var(--yellow)':item.resultType==='g10'?'var(--green)':item.resultType==='m5'?'var(--red)':'var(--text2)';
+
+  if(buzzAt===null&&powerWordIdx===null)return'';
+
+  return`<div class="plog-buzz-wrap">
+    <div class="plog-buzz-label">
+      ${buzzAt!==null?`Buzzed word ${buzzAt} of ${totalWords}`:''} 
+      ${powerWordIdx!==null?`· Power mark at word ${powerWordIdx}`:''}
+    </div>
+    <div class="plog-buzz-track">
+      ${buzzPct!==null?`<div class="plog-buzz-fill" style="width:${buzzPct}%"></div>`:''}
+      ${powerPct!==null?`<div class="plog-power-tick" style="left:${powerPct}%" title="Power mark (*)"></div>`:''}
+      ${buzzPct!==null?`<div class="plog-buzz-dot" style="left:${buzzPct}%;background:${dotColor}" title="You buzzed here"></div>`:''}
+    </div>
+  </div>`;
+}
+
+function formatPlogQ(item,plogIdx){
+  if(!item.q)return'';
+  const qRaw=item.q.question_sanitized||item.q.question||'';
+  // Build word list preserving (*) marker
+  const plainWords=stripHTML(qRaw).split(/\s+/).filter(w=>w);
+
+  // Find power word index in plain text
+  const powerCharIdx=qRaw.indexOf('(*)');
+  let powerWordIdx=null;
+  if(powerCharIdx>0){
+    powerWordIdx=stripHTML(qRaw.substring(0,powerCharIdx)).split(/\s+/).filter(w=>w).length;
+  }
+
+  const buzzAt=item.bwi>=0?item.bwi:null;
+
+  const rendered=plainWords.map((word,wi)=>{
+    const isPowerMark=word==='(*)';
+    const isBuzzed=buzzAt!==null&&wi===buzzAt;
+    const isPrePower=powerWordIdx!==null&&wi<powerWordIdx;
+    let cls='qw';
+    if(isPowerMark)cls+=' power-mark';
+    else if(isBuzzed)cls+=' buzzed';
+    else if(isPrePower)cls+=' pre-power';
+    return`<span class="${cls}">${word}</span>`;
+  }).join(' ');
+
+  // Split into sentences for + buttons
+  const sents=stripHTML(qRaw).split(/(?<=[.!?])\s+/).map(s=>s.trim()).filter(s=>s.length>0);
+  // We already rendered word-by-word; now attach + buttons per sentence
+  // Rebuild sentence-by-sentence with + buttons appended
+  let wordCursor=0;
+  const sentHtml=sents.map((sent,si)=>{
+    const sentWords=sent.split(/\s+/).filter(w=>w);
+    const sentRendered=sentWords.map((word,wi)=>{
+      const globalWi=wordCursor+wi;
+      const isPowerMark=word==='(*)';
+      const isBuzzed=buzzAt!==null&&globalWi===buzzAt;
+      const isPrePower=powerWordIdx!==null&&globalWi<powerWordIdx;
+      let cls='qw';
+      if(isPowerMark)cls+=' power-mark';
+      else if(isBuzzed)cls+=' buzzed';
+      else if(isPrePower)cls+=' pre-power';
+      return`<span class="${cls}">${word}</span>`;
+    }).join(' ');
+    wordCursor+=sentWords.length;
+    const esc=sent.replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;');
+    return`${sentRendered}<button class="add-clue-btn" onclick="openAddCluePopupFromPlog(event,'${esc}',${plogIdx})" title="Add clue">+</button> `;
+  }).join('');
+
+  return sentHtml;
+}
+
+let plogClueIdx=null;
+function openAddCluePopupFromPlog(ev,sent,idx){
+  ev.stopPropagation();
+  plogClueIdx=idx;
+  currentQ=plogEntries[idx].q;
+  cpSent=sent;cpSentIdx=-1;
+  document.getElementById('addClueSent').textContent=sent;
+  document.getElementById('cpWholeSub').textContent=sent.length>80?sent.substring(0,80)+'...':sent;
+  document.getElementById('cpCustomInput').value='';
+  document.getElementById('cpCustomInput').style.display='none';
+  document.querySelector('input[name="cpChoice"][value="whole"]').checked=true;
+  document.getElementById('dupWarning').classList.remove('visible');
+  checkDupWarning();
+  document.getElementById('addClueOverlay').classList.add('open');
+}
+</script>
+</body>
+</html>
