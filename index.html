@@ -307,6 +307,8 @@ input[type=number]:focus,input[type=text]:focus{border-color:var(--accent);}
 .clear-sel-none{font-size:11px;color:var(--text2);background:none;border:none;cursor:pointer;padding:0;font-family:var(--font);}
 .clear-search{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:7px 11px;font-size:13px;color:var(--text);font-family:var(--font);outline:none;margin-bottom:8px;}
 .clear-search:focus{border-color:var(--accent);}
+.stats-table .td-group-header{background:var(--bg3);font-size:10px;color:var(--text2);font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em;padding:6px 12px;font-weight:700;border-bottom:1px solid var(--border);}
+.stats-table .td-group-header td{background:var(--bg3)!important;color:var(--text2);font-size:10px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em;font-weight:700;}
 </style>
 </head>
 <body data-theme="dark">
@@ -1545,78 +1547,67 @@ function importAnki(){
     const f=e.target.files[0];if(!f)return;
     try{
       const text=await f.text();
-      const lines=text.split('\n');
-      let imported=0,skipped=0,errors=0;
-
-      let sep='\t';
-      let frontCol=0,backCol=-1; // -1 = auto-detect
+      const lines=text.split(/\r?\n/);
+      let imported=0,skipped=0;
 
       for(const line of lines){
         const trimmed=line.trim();
-        if(!trimmed)continue;
+        if(!trimmed||trimmed.startsWith('#'))continue;
 
-        // Parse Anki header comments
-        if(trimmed.startsWith('#')){
-          if(trimmed.startsWith('#separator:'))
-            sep=trimmed.replace('#separator:','').trim().toLowerCase()==='comma'?',':'\t';
-          if(trimmed.startsWith('#columns:')){
-            const cols=trimmed.replace('#columns:','').trim().toLowerCase().split(/[\t,]+/);
-            frontCol=cols.indexOf('front');
-            backCol=cols.indexOf('back');
-            if(frontCol<0)frontCol=0;
-          }
-          continue;
-        }
+        // Split on TAB — Anki plain text uses tab as separator
+        const cols=trimmed.split('\t');
 
-        // Split on separator
-        const parts=splitAnkiLine(trimmed,sep)
-          .map(p=>stripAnkiQuotes(p.trim()))
-          .map(p=>p.replace(/<[^>]+>/g,' ').replace(/&nbsp;/g,' ').replace(/\s+/g,' ').trim());
+        // Clean each column: strip quotes, strip HTML, collapse whitespace
+        const clean=cols.map(c=>{
+          let s=c.trim();
+          // Strip outer quotes and unescape inner ""
+          if(s.startsWith('"')&&s.endsWith('"'))s=s.slice(1,-1).replace(/""/g,'"');
+          // Strip HTML tags
+          s=s.replace(/<[^>]+>/g,' ');
+          // Decode common HTML entities
+          s=s.replace(/&nbsp;/g,' ').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"');
+          return s.replace(/\s+/g,' ').trim();
+        }).filter(c=>c.length>0); // drop empty cols (trailing tabs)
 
-        // Remove trailing empty fields
-        while(parts.length&&!parts[parts.length-1])parts.pop();
-        if(parts.length<2)continue;
+        if(clean.length<2)continue;
 
-        // If backCol not set by header, answer = LAST non-empty field, clue = first
-        const clueText=parts[frontCol]||'';
-        const ans=backCol>=0&&backCol<parts.length
-          ?parts[backCol]
-          :parts[parts.length-1]; // last non-empty field
+        // First non-empty col = clue, last non-empty col = answer
+        let clueText=clean[0];
+        let ans=clean[clean.length-1];
+
+        // Edge case: answer embedded in clue like "curl B = μ₀J : Ampere's Law"
+        // If clue contains " : Answer" at the end matching the answer field, strip it
+        const colonPattern=new RegExp('\\s*:\\s*'+escapeRegex(ans)+'\\s*$','i');
+        clueText=clueText.replace(colonPattern,'').trim();
 
         if(!clueText||!ans||clueText===ans)continue;
 
         const sub=subKey(ans);
-        try{
-          const added=await addClue(sub,ans,clueText);
-          await syncFC(sub,ans,clueText);
-          if(added)imported++;else skipped++;
-        }catch(err){errors++;}
+        const added=await addClue(sub,ans,clueText);
+        await syncFC(sub,ans,clueText);
+        if(added)imported++;else skipped++;
       }
 
       await backfillFC();
       renderClues();
-      showToast(`Imported ${imported} clue${imported!==1?'s':''}, ${skipped} duplicate${skipped!==1?'s':''} skipped${errors?', '+errors+' errors':''}`);
-    }catch(err){showToast('Import failed: '+err.message);}
+      showToast(`Imported ${imported} clue${imported!==1?'s':''}, ${skipped} duplicate${skipped!==1?'s':''} skipped`);
+    }catch(err){showToast('Import failed: '+err.message);console.error(err);}
   };inp.click();
 }
 
+function escapeRegex(s){return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');}
+
 function splitAnkiLine(line,sep){
-  // Handle quoted fields (Anki wraps fields in quotes when they contain the separator)
-  const parts=[];
-  let cur='',inQuote=false;
+  const parts=[];let cur='',inQuote=false;
   for(let i=0;i<line.length;i++){
     const ch=line[i];
-    if(ch==='"'&&!inQuote){inQuote=true;}
-    else if(ch==='"'&&inQuote){
-      if(line[i+1]==='"'){cur+='"';i++;}// escaped quote
-      else inQuote=false;
-    }else if(ch===sep&&!inQuote){parts.push(cur);cur='';}
+    if(ch==='"'&&!inQuote)inQuote=true;
+    else if(ch==='"'&&inQuote){if(line[i+1]==='"'){cur+='"';i++;}else inQuote=false;}
+    else if(ch===sep&&!inQuote){parts.push(cur);cur='';}
     else cur+=ch;
   }
-  parts.push(cur);
-  return parts;
+  parts.push(cur);return parts;
 }
-
 function stripAnkiQuotes(s){
   if(s.startsWith('"')&&s.endsWith('"'))return s.slice(1,-1).replace(/""/g,'"');
   return s;
@@ -1661,7 +1652,8 @@ function renderStatsTable(tab){
   const groups={};
   statsResults.forEach(r=>{
     const key=isSub?(r.subcat||r.sub||'Unknown'):(r.sub||'Unknown');
-    if(!groups[key])groups[key]={heard:0,pow:0,get:0,neg:0,dead:0,celSum:0,celCount:0,pts:0};
+    const parentKey=r.sub||'Unknown';
+    if(!groups[key])groups[key]={heard:0,pow:0,get:0,neg:0,dead:0,celSum:0,celCount:0,pts:0,parent:parentKey};
     const g=groups[key];
     g.heard++;
     if(r.rt==='p15'){g.pow++;g.pts+=15;}
@@ -1671,22 +1663,50 @@ function renderStatsTable(tab){
     if(r.cel!=null){g.celSum+=r.cel;g.celCount++;}
   });
 
-  const sorted=Object.entries(groups).sort((a,b)=>b[1].heard-a[1].heard);
-  body.innerHTML=sorted.map(([key,g])=>{
-    const getRate=g.heard>0?(((g.pow+g.get)/g.heard)*100).toFixed(0)+'%':'—';
-    const cel=g.celCount>0?(g.celSum/g.celCount).toFixed(3):'—';
-    return`<tr>
-      <td class="td-sub">${key}</td>
-      <td>${g.heard}</td>
-      <td class="td-pow">${g.pow}</td>
-      <td class="td-get">${g.get}</td>
-      <td class="td-neg">${g.neg}</td>
-      <td style="color:var(--text2)">${g.dead}</td>
-      <td>${getRate}</td>
-      <td class="td-cel">${cel}</td>
-      <td class="td-pts" style="color:${g.pts>=0?'var(--green)':'var(--red)'}">${g.pts>=0?'+':''}${g.pts}</td>
-    </tr>`;
-  }).join('');
+  if(!isSub){
+    // Category view — flat, sorted by heard
+    const sorted=Object.entries(groups).sort((a,b)=>b[1].heard-a[1].heard);
+    body.innerHTML=sorted.map(([key,g])=>statsRow(key,g)).join('');
+  } else {
+    // Subcategory view — grouped by parent category
+    // Build parent → subcats map
+    const parentOrder=['SCI','HIS','LIT','FA','REL','MYTH','PHIL','SS','GEO','CE','OTHER','TRASH'];
+    const byParent={};
+    Object.entries(groups).forEach(([key,g])=>{
+      const p=g.parent||'Unknown';
+      if(!byParent[p])byParent[p]=[];
+      byParent[p].push([key,g]);
+    });
+    // Sort parents by known order, unknown at end
+    const sortedParents=Object.keys(byParent).sort((a,b)=>{
+      const ai=parentOrder.indexOf(a),bi=parentOrder.indexOf(b);
+      if(ai<0&&bi<0)return a.localeCompare(b);
+      if(ai<0)return 1;if(bi<0)return-1;
+      return ai-bi;
+    });
+    const PARENT_LABELS={SCI:'Science',HIS:'History',LIT:'Literature',FA:'Fine Arts',REL:'Religion',MYTH:'Mythology',PHIL:'Philosophy',SS:'Social Science',GEO:'Geography',CE:'Current Events',OTHER:'Other Academic',TRASH:'Trash / Pop Culture'};
+    body.innerHTML=sortedParents.map(parent=>{
+      const subs=byParent[parent].sort((a,b)=>b[1].heard-a[1].heard);
+      const label=PARENT_LABELS[parent]||parent;
+      const headerRow=`<tr><td colspan="9" style="background:var(--bg3);color:var(--text2);font-size:10px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em;font-weight:700;padding:7px 12px;border-bottom:1px solid var(--border);">${label}</td></tr>`;
+      return headerRow+subs.map(([key,g])=>statsRow(key,g)).join('');
+    }).join('');
+  }
+}
+function statsRow(key,g){
+  const getRate=g.heard>0?(((g.pow+g.get)/g.heard)*100).toFixed(0)+'%':'—';
+  const cel=g.celCount>0?(g.celSum/g.celCount).toFixed(3):'—';
+  return`<tr>
+    <td class="td-sub">${key}</td>
+    <td>${g.heard}</td>
+    <td class="td-pow">${g.pow}</td>
+    <td class="td-get">${g.get}</td>
+    <td class="td-neg">${g.neg}</td>
+    <td style="color:var(--text2)">${g.dead}</td>
+    <td>${getRate}</td>
+    <td class="td-cel">${cel}</td>
+    <td class="td-pts" style="color:${g.pts>=0?'var(--green)':'var(--red)'}">${g.pts>=0?'+':''}${g.pts}</td>
+  </tr>`;
 }
 function downloadJSON(){const blob=new Blob([JSON.stringify(clueCache,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='qb_clues.json';a.click();}
 function importJSON(){
