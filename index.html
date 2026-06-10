@@ -1546,28 +1546,90 @@ function importAnki(){
     try{
       const text=await f.text();
       const lines=text.split('\n');
-      let imported=0,skipped=0;
+      let imported=0,skipped=0,errors=0;
+
+      // Detect separator from Anki header (tab is default)
+      let sep='\t';
+      let frontCol=0,backCol=1; // default: Front=col0, Back=col1
+
       for(const line of lines){
-        if(line.startsWith('#')||!line.trim())continue;
-        const parts=line.split('\t');
+        const trimmed=line.trim();
+        if(!trimmed)continue;
+
+        // Parse Anki header comments
+        if(trimmed.startsWith('#')){
+          if(trimmed.startsWith('#separator:'))
+            sep=trimmed.replace('#separator:','').trim().toLowerCase()==='comma'?',':'\t';
+          // #columns: tells us field order e.g. "Front Back" or "Back Front"
+          if(trimmed.startsWith('#columns:')){
+            const cols=trimmed.replace('#columns:','').trim().toLowerCase().split(/[\t,]+/);
+            frontCol=cols.indexOf('front');
+            backCol=cols.indexOf('back');
+            if(frontCol<0)frontCol=0;
+            if(backCol<0)backCol=1;
+          }
+          continue;
+        }
+
+        // Split line by separator, respecting quoted fields
+        const parts=splitAnkiLine(trimmed,sep);
         if(parts.length<2)continue;
-        const frontRaw=parts[0].trim();
-        const ans=parts[1].trim();
-        if(!frontRaw||!ans)continue;
-        // Detect subject from answer text
+
+        let front=(parts[frontCol]||'').trim();
+        let back=(parts[backCol]||'').trim();
+
+        // Strip surrounding quotes Anki sometimes adds
+        front=stripAnkiQuotes(front);
+        back=stripAnkiQuotes(back);
+
+        // Strip any HTML tags Anki may have added
+        front=front.replace(/<[^>]+>/g,' ').replace(/&nbsp;/g,' ').replace(/\s+/g,' ').trim();
+        back=back.replace(/<[^>]+>/g,' ').replace(/&nbsp;/g,' ').replace(/\s+/g,' ').trim();
+
+        if(!front||!back)continue;
+
+        // In QBAtlas exports: Front=clue, Back=answer
+        // In Anki exports of user-made cards: Front may be answer, Back may be clue
+        // We treat Front=clue, Back=answer to match our export format.
+        // If someone exported from Anki with answer on front, they can swap — we just follow the file.
+        const clueText=front;
+        const ans=back;
+
         const sub=subKey(ans);
-        // Split front into individual clues (by <br>, <BR>, or actual newlines)
-        const clues=frontRaw.replace(/<br\s*\/?>/gi,'\n').split('\n').map(s=>s.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim()).filter(s=>s.length>2);
-        for(const clueText of clues){
+        try{
           const added=await addClue(sub,ans,clueText);
           await syncFC(sub,ans,clueText);
           if(added)imported++;else skipped++;
-        }
+        }catch(err){errors++;}
       }
+
+      await backfillFC();
       renderClues();
-      showToast(`Imported ${imported} clues, ${skipped} duplicates skipped`);
+      showToast(`Imported ${imported} clue${imported!==1?'s':''}, ${skipped} duplicate${skipped!==1?'s':''} skipped${errors?', '+errors+' errors':''}`);
     }catch(err){showToast('Import failed: '+err.message);}
   };inp.click();
+}
+
+function splitAnkiLine(line,sep){
+  // Handle quoted fields (Anki wraps fields in quotes when they contain the separator)
+  const parts=[];
+  let cur='',inQuote=false;
+  for(let i=0;i<line.length;i++){
+    const ch=line[i];
+    if(ch==='"'&&!inQuote){inQuote=true;}
+    else if(ch==='"'&&inQuote){
+      if(line[i+1]==='"'){cur+='"';i++;}// escaped quote
+      else inQuote=false;
+    }else if(ch===sep&&!inQuote){parts.push(cur);cur='';}
+    else cur+=ch;
+  }
+  parts.push(cur);
+  return parts;
+}
+
+function stripAnkiQuotes(s){
+  if(s.startsWith('"')&&s.endsWith('"'))return s.slice(1,-1).replace(/""/g,'"');
+  return s;
 }
 
 // ── STATS ENGINE ─────────────────────────────────────────────────
