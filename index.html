@@ -296,6 +296,17 @@ input[type=number]:focus,input[type=text]:focus{border-color:var(--accent);}
 .stats-panel-wrap.active{display:block;}
 .dup-warning{font-size:12px;color:var(--yellow);background:rgba(240,192,64,.1);border:1px solid rgba(240,192,64,.3);border-radius:6px;padding:7px 11px;margin-bottom:10px;display:none;}
 .dup-warning.visible{display:block;}
+.clear-select-list{max-height:320px;overflow-y:auto;margin:10px 0;display:flex;flex-direction:column;gap:4px;}
+.clear-select-item{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:6px;cursor:pointer;transition:background .1s;}
+.clear-select-item:hover{background:var(--bg3);}
+.clear-select-item input[type=checkbox]{accent-color:var(--accent);width:15px;height:15px;cursor:pointer;flex-shrink:0;}
+.clear-select-label{font-size:13px;flex:1;}
+.clear-select-meta{font-size:11px;color:var(--text2);font-family:var(--mono);}
+.clear-select-actions{display:flex;gap:6px;margin-bottom:8px;}
+.clear-sel-all{font-size:11px;color:var(--accent);background:none;border:none;cursor:pointer;padding:0;font-family:var(--font);}
+.clear-sel-none{font-size:11px;color:var(--text2);background:none;border:none;cursor:pointer;padding:0;font-family:var(--font);}
+.clear-search{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:7px 11px;font-size:13px;color:var(--text);font-family:var(--font);outline:none;margin-bottom:8px;}
+.clear-search:focus{border-color:var(--accent);}
 </style>
 </head>
 <body data-theme="dark">
@@ -442,7 +453,7 @@ input[type=number]:focus,input[type=text]:focus{border-color:var(--accent);}
   <div class="plog-toolbar">
     <input type="text" class="plog-search" id="plogSearch" placeholder="Search by answer, tournament, category..." oninput="renderPlog()">
     <span class="plog-count" id="plogCount"></span>
-    <button class="tool-btn" style="border-color:var(--red);color:var(--red);" onclick="confirmClearPlog()">🗑 Clear All Tossups</button>
+    <button class="tool-btn" style="border-color:var(--red);color:var(--red);" onclick="openClearPlogPopup()">🗑 Clear Tossups</button>
   </div>
   <div id="plogList"></div>
 </div>
@@ -454,7 +465,7 @@ input[type=number]:focus,input[type=text]:focus{border-color:var(--accent);}
       <div class="stats-tab active" onclick="switchStatsTab('category',this)">By Category</div>
       <div class="stats-tab" onclick="switchStatsTab('subcategory',this)">By Subcategory</div>
     </div>
-    <button class="tool-btn" style="border-color:var(--red);color:var(--red);" onclick="confirmClearStats()">🗑 Clear All Stats</button>
+    <button class="tool-btn" style="border-color:var(--red);color:var(--red);" onclick="openClearStatsPopup()">🗑 Clear Stats</button>
   </div>
   <div class="stats-panel-wrap active" id="sp-category">
     <div class="stats-card">
@@ -477,6 +488,44 @@ input[type=number]:focus,input[type=text]:focus{border-color:var(--accent);}
       </table>
     </div>
     <div class="stats-empty" id="statsSubEmpty" style="display:none">No subcategory data yet.</div>
+  </div>
+</div>
+
+<!-- CLEAR STATS POPUP -->
+<div class="popup-overlay" id="clearStatsOverlay">
+  <div class="popup-box" style="max-width:480px;width:95%;">
+    <div class="popup-title">Clear Stats</div>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:12px;">Select which subjects to remove from your stats history.</p>
+    <input type="text" class="clear-search" id="clearStatsSearch" placeholder="Filter subjects..." oninput="filterClearStats()">
+    <div class="clear-select-actions">
+      <button class="clear-sel-all" onclick="selectAllClearStats(true)">Select all</button>
+      <span style="color:var(--border);margin:0 4px">·</span>
+      <button class="clear-sel-none" onclick="selectAllClearStats(false)">Deselect all</button>
+    </div>
+    <div class="clear-select-list" id="clearStatsList"></div>
+    <div class="popup-btns">
+      <button class="popup-cancel" onclick="closePopup('clearStatsOverlay')">Cancel</button>
+      <button class="popup-delete" onclick="executeClearStats()">🗑 Clear Selected</button>
+    </div>
+  </div>
+</div>
+
+<!-- CLEAR PLOG POPUP -->
+<div class="popup-overlay" id="clearPlogOverlay">
+  <div class="popup-box" style="max-width:480px;width:95%;">
+    <div class="popup-title">Clear Tossups</div>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:12px;">Select which answer lines to remove from your Packet Log.</p>
+    <input type="text" class="clear-search" id="clearPlogSearch" placeholder="Filter answers..." oninput="filterClearPlog()">
+    <div class="clear-select-actions">
+      <button class="clear-sel-all" onclick="selectAllClearPlog(true)">Select all</button>
+      <span style="color:var(--border);margin:0 4px">·</span>
+      <button class="clear-sel-none" onclick="selectAllClearPlog(false)">Deselect all</button>
+    </div>
+    <div class="clear-select-list" id="clearPlogList"></div>
+    <div class="popup-btns">
+      <button class="popup-cancel" onclick="closePopup('clearPlogOverlay')">Cancel</button>
+      <button class="popup-delete" onclick="executeClearPlog()">🗑 Clear Selected</button>
+    </div>
   </div>
 </div>
 
@@ -1863,6 +1912,71 @@ function openAddCluePopupFromPlog(ev,sent,idx){
   checkDupWarning();
   document.getElementById('addClueOverlay').classList.add('open');
 }
+// ── CLEAR STATS (selective) ───────────────────────────────────────
+function openClearStatsPopup(){
+  renderClearStatsList('');
+  document.getElementById('clearStatsSearch').value='';
+  document.getElementById('clearStatsOverlay').classList.add('open');
+}
+function renderClearStatsList(filter){
+  const subs=[...new Set(statsResults.map(r=>r.sub||'Unknown'))].sort();
+  const filtered=filter?subs.filter(s=>s.toLowerCase().includes(filter.toLowerCase())):subs;
+  const counts={};statsResults.forEach(r=>{const k=r.sub||'Unknown';counts[k]=(counts[k]||0)+1;});
+  document.getElementById('clearStatsList').innerHTML=filtered.length
+    ?filtered.map(s=>`<label class="clear-select-item">
+        <input type="checkbox" class="cs-chk" value="${s}" checked>
+        <span class="clear-select-label">${s}</span>
+        <span class="clear-select-meta">${counts[s]||0} tossup${counts[s]!==1?'s':''}</span>
+      </label>`).join('')
+    :'<div style="text-align:center;padding:20px;color:var(--text2);font-size:13px;">No subjects found</div>';
+}
+function filterClearStats(){renderClearStatsList(document.getElementById('clearStatsSearch').value);}
+function selectAllClearStats(v){document.querySelectorAll('.cs-chk').forEach(c=>c.checked=v);}
+async function executeClearStats(){
+  const selected=[...document.querySelectorAll('.cs-chk:checked')].map(c=>c.value);
+  if(!selected.length){showToast('Nothing selected');return;}
+  const toDelete=statsResults.filter(r=>selected.includes(r.sub||'Unknown'));
+  for(const r of toDelete)await dbDelete('results',r.id);
+  statsResults=statsResults.filter(r=>!selected.includes(r.sub||'Unknown'));
+  closePopup('clearStatsOverlay');
+  renderStats();
+  showToast(`Cleared stats for: ${selected.join(', ')}`);
+}
+
+// ── CLEAR PLOG (selective by answer line) ────────────────────────
+function openClearPlogPopup(){
+  renderClearPlogList('');
+  document.getElementById('clearPlogSearch').value='';
+  document.getElementById('clearPlogOverlay').classList.add('open');
+}
+function renderClearPlogList(filter){
+  const answers=[...new Set(plogEntries.map(e=>e.ans||'Unknown'))].sort();
+  const filtered=filter?answers.filter(a=>a.toLowerCase().includes(filter.toLowerCase())):answers;
+  const counts={};plogEntries.forEach(e=>{const k=e.ans||'Unknown';counts[k]=(counts[k]||0)+1;});
+  document.getElementById('clearPlogList').innerHTML=filtered.length
+    ?filtered.map(a=>{
+        const safe=a.replace(/"/g,'&quot;');
+        return`<label class="clear-select-item">
+          <input type="checkbox" class="cp-chk" value="${safe}" checked>
+          <span class="clear-select-label">${a}</span>
+          <span class="clear-select-meta">${counts[a]||0} tossup${counts[a]!==1?'s':''}</span>
+        </label>`;
+      }).join('')
+    :'<div style="text-align:center;padding:20px;color:var(--text2);font-size:13px;">No answers found</div>';
+}
+function filterClearPlog(){renderClearPlogList(document.getElementById('clearPlogSearch').value);}
+function selectAllClearPlog(v){document.querySelectorAll('.cp-chk:checked, .cp-chk').forEach(c=>c.checked=v);}
+async function executeClearPlog(){
+  const selected=[...document.querySelectorAll('.cp-chk:checked')].map(c=>c.value);
+  if(!selected.length){showToast('Nothing selected');return;}
+  const toDelete=plogEntries.filter(e=>selected.includes(e.ans||'Unknown'));
+  for(const e of toDelete)await dbDelete('plog',e.id);
+  plogEntries=plogEntries.filter(e=>!selected.includes(e.ans||'Unknown'));
+  closePopup('clearPlogOverlay');
+  renderPlog();
+  showToast(`Cleared ${toDelete.length} tossup${toDelete.length!==1?'s':''}`);
+}
+
 function confirmClearStats(){
   pendingConfirm={type:'clearStats'};
   showConfirm('Clear All Stats?','This will permanently delete all session history and stat data. Cannot be undone.','Clear All');
