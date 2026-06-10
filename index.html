@@ -1813,10 +1813,27 @@ function renderPlog(){
     if(!groups[key])groups[key]=[];
     groups[key].push(item);
   });
-  // Sort groups: most recent tossup first within group; groups sorted by most recent
-  const sortedGroups=Object.entries(groups).sort((a,b)=>(b[1][0].ts||0)-(a[1][0].ts||0));
 
+  // Sort answer groups: by subject first, then alphabetically within each subject
+  const SUB_ORDER=['SCI','HIS','LIT','FA','REL','MYTH','PHIL','SS','GEO','CE','OTHER','TRASH'];
+  const sortedGroups=Object.entries(groups).sort((a,b)=>{
+    const subA=a[1][0]?.sub||'Unknown';
+    const subB=b[1][0]?.sub||'Unknown';
+    const si=SUB_ORDER.indexOf(subA),sj=SUB_ORDER.indexOf(subB);
+    const subCmp=(si<0&&sj<0)?subA.localeCompare(subB):(si<0?1:sj<0?-1:si-sj);
+    if(subCmp!==0)return subCmp;
+    return a[0].localeCompare(b[0]); // alphabetical within subject
+  });
+
+  const SUB_LABELS={SCI:'Science',HIS:'History',LIT:'Literature',FA:'Fine Arts',REL:'Religion',MYTH:'Mythology',PHIL:'Philosophy',SS:'Social Science',GEO:'Geography',CE:'Current Events',OTHER:'Other Academic',TRASH:'Trash / Pop Culture'};
+  let lastSub=null;
   list.innerHTML=sortedGroups.map(([ans,items],gi)=>{
+    const thisSub=items[0]?.sub||'Unknown';
+    const subHeader=thisSub!==lastSub
+      ?`<div style="padding:8px 18px 6px;font-size:10px;color:var(--text2);font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em;font-weight:700;background:var(--bg3);border:1px solid var(--border);border-radius:8px;margin-bottom:8px;margin-top:${lastSub?'16px':'0'}">${SUB_LABELS[thisSub]||thisSub}</div>`
+      :'';
+    lastSub=thisSub;
+
     const tuRows=items.map((item,ti)=>{
       const plogIdx=plogEntries.indexOf(item);
       const badgeCls=item.resultType==='p15'?'lb-p':item.resultType==='g10'?'lb-c':item.resultType==='m5'?'lb-w':'lb-d';
@@ -1847,7 +1864,6 @@ function renderPlog(){
       </div>`;
     }).join('');
 
-    // Summary badges for the group header
     const pow=items.filter(i=>i.resultType==='p15').length;
     const got=items.filter(i=>i.resultType==='g10').length;
     const neg=items.filter(i=>i.resultType==='m5').length;
@@ -1859,7 +1875,7 @@ function renderPlog(){
       dead?`<span class="plog-badge lb-d">${dead} dead</span>`:'',
     ].filter(Boolean).join('');
 
-    return`<div class="plog-group">
+    return`${subHeader}<div class="plog-group">
       <div class="plog-group-header" onclick="togglePlogGroup('pg${gi}')">
         <span class="plog-group-ans">${ans}</span>
         <div style="display:flex;align-items:center;gap:8px;">
