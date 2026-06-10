@@ -1548,9 +1548,8 @@ function importAnki(){
       const lines=text.split('\n');
       let imported=0,skipped=0,errors=0;
 
-      // Detect separator from Anki header (tab is default)
       let sep='\t';
-      let frontCol=0,backCol=1; // default: Front=col0, Back=col1
+      let frontCol=0,backCol=-1; // -1 = auto-detect
 
       for(const line of lines){
         const trimmed=line.trim();
@@ -1560,40 +1559,31 @@ function importAnki(){
         if(trimmed.startsWith('#')){
           if(trimmed.startsWith('#separator:'))
             sep=trimmed.replace('#separator:','').trim().toLowerCase()==='comma'?',':'\t';
-          // #columns: tells us field order e.g. "Front Back" or "Back Front"
           if(trimmed.startsWith('#columns:')){
             const cols=trimmed.replace('#columns:','').trim().toLowerCase().split(/[\t,]+/);
             frontCol=cols.indexOf('front');
             backCol=cols.indexOf('back');
             if(frontCol<0)frontCol=0;
-            if(backCol<0)backCol=1;
           }
           continue;
         }
 
-        // Split line by separator, respecting quoted fields
-        const parts=splitAnkiLine(trimmed,sep);
+        // Split on separator
+        const parts=splitAnkiLine(trimmed,sep)
+          .map(p=>stripAnkiQuotes(p.trim()))
+          .map(p=>p.replace(/<[^>]+>/g,' ').replace(/&nbsp;/g,' ').replace(/\s+/g,' ').trim());
+
+        // Remove trailing empty fields
+        while(parts.length&&!parts[parts.length-1])parts.pop();
         if(parts.length<2)continue;
 
-        let front=(parts[frontCol]||'').trim();
-        let back=(parts[backCol]||'').trim();
+        // If backCol not set by header, answer = LAST non-empty field, clue = first
+        const clueText=parts[frontCol]||'';
+        const ans=backCol>=0&&backCol<parts.length
+          ?parts[backCol]
+          :parts[parts.length-1]; // last non-empty field
 
-        // Strip surrounding quotes Anki sometimes adds
-        front=stripAnkiQuotes(front);
-        back=stripAnkiQuotes(back);
-
-        // Strip any HTML tags Anki may have added
-        front=front.replace(/<[^>]+>/g,' ').replace(/&nbsp;/g,' ').replace(/\s+/g,' ').trim();
-        back=back.replace(/<[^>]+>/g,' ').replace(/&nbsp;/g,' ').replace(/\s+/g,' ').trim();
-
-        if(!front||!back)continue;
-
-        // In QBAtlas exports: Front=clue, Back=answer
-        // In Anki exports of user-made cards: Front may be answer, Back may be clue
-        // We treat Front=clue, Back=answer to match our export format.
-        // If someone exported from Anki with answer on front, they can swap — we just follow the file.
-        const clueText=front;
-        const ans=back;
+        if(!clueText||!ans||clueText===ans)continue;
 
         const sub=subKey(ans);
         try{
