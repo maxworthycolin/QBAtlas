@@ -309,6 +309,13 @@ input[type=number]:focus,input[type=text]:focus{border-color:var(--accent);}
 .clear-search:focus{border-color:var(--accent);}
 .stats-table .td-group-header{background:var(--bg3);font-size:10px;color:var(--text2);font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em;padding:6px 12px;font-weight:700;border-bottom:1px solid var(--border);}
 .stats-table .td-group-header td{background:var(--bg3)!important;color:var(--text2);font-size:10px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em;font-weight:700;}
+.export-opt{display:flex;flex-direction:column;gap:10px;margin:12px 0;}
+.export-opt label{display:flex;align-items:flex-start;gap:12px;padding:12px;border:1px solid var(--border);border-radius:8px;cursor:pointer;transition:border-color .15s;}
+.export-opt label:hover{border-color:var(--accent);}
+.export-opt label:has(input:checked){border-color:var(--accent);background:rgba(99,179,237,.06);}
+.export-opt input[type=radio]{accent-color:var(--accent);margin-top:2px;flex-shrink:0;}
+.export-opt-title{font-size:13px;font-weight:600;margin-bottom:2px;}
+.export-opt-sub{font-size:11px;color:var(--text2);}
 </style>
 </head>
 <body data-theme="dark">
@@ -440,7 +447,7 @@ input[type=number]:focus,input[type=text]:focus{border-color:var(--accent);}
   <div class="clue-toolbar">
     <input type="text" class="clue-search" id="clueSearch" placeholder="Search answer lines..." oninput="filterClues()">
     <button class="tool-btn" onclick="openNewCluePopup()">➕ New Clue</button>
-    <button class="tool-btn" onclick="exportAnki()">📤 Export for Anki</button>
+    <button class="tool-btn" onclick="openExportAnkiPopup()">📤 Export for Anki</button>
     <button class="tool-btn" onclick="importAnki()">📥 Import from Anki</button>
     <button class="tool-btn" onclick="downloadJSON()">⬇ Backup JSON</button>
     <button class="tool-btn" onclick="importJSON()">⬆ Import JSON</button>
@@ -527,6 +534,33 @@ input[type=number]:focus,input[type=text]:focus{border-color:var(--accent);}
     <div class="popup-btns">
       <button class="popup-cancel" onclick="closePopup('clearPlogOverlay')">Cancel</button>
       <button class="popup-delete" onclick="executeClearPlog()">🗑 Clear Selected</button>
+    </div>
+  </div>
+</div>
+
+<!-- ANKI EXPORT POPUP -->
+<div class="popup-overlay" id="ankiExportOverlay">
+  <div class="popup-box">
+    <div class="popup-title">Export to Anki</div>
+    <div class="export-opt">
+      <label>
+        <input type="radio" name="exportMode" value="all" checked>
+        <div>
+          <div class="export-opt-title">Export all clues</div>
+          <div class="export-opt-sub" id="exportAllSub">All clues in your database</div>
+        </div>
+      </label>
+      <label>
+        <input type="radio" name="exportMode" value="new">
+        <div>
+          <div class="export-opt-title">Export new only</div>
+          <div class="export-opt-sub" id="exportNewSub">Only clues not previously exported</div>
+        </div>
+      </label>
+    </div>
+    <div class="popup-btns">
+      <button class="popup-cancel" onclick="closePopup('ankiExportOverlay')">Cancel</button>
+      <button class="popup-confirm" onclick="doExportAnki()">📤 Export</button>
     </div>
   </div>
 </div>
@@ -1515,25 +1549,64 @@ function filterClues(){
 }
 
 // ── ANKI EXPORT ──────────────────────────────────────────────────
-// One card per clue. Front = clue text. Back = answer.
-function exportAnki(){
-  let lines=[];
+function openExportAnkiPopup(){
+  // Count all vs new
+  let total=0,newCount=0;
   SUBS.forEach(sub=>{
     const data=clueCache[sub]||{};
-    Object.entries(data).forEach(([ans,e])=>{
+    Object.values(data).forEach(e=>{
       e.clues.forEach(c=>{
-        lines.push(c.text+'\t'+ans);
+        total++;
+        if(!c.exportedAt)newCount++;
       });
     });
   });
-  if(!lines.length){showToast('No clues to export');return;}
+  document.getElementById('exportAllSub').textContent=`${total} clue${total!==1?'s':''} total`;
+  document.getElementById('exportNewSub').textContent=newCount>0
+    ?`${newCount} clue${newCount!==1?'s':''} not yet exported`
+    :'No new clues since last export';
+  document.querySelector('input[name="exportMode"][value="all"]').checked=true;
+  document.getElementById('ankiExportOverlay').classList.add('open');
+}
+
+async function doExportAnki(){
+  const mode=document.querySelector('input[name="exportMode"]:checked').value;
+  closePopup('ankiExportOverlay');
+  const now=Date.now();
+  let lines=[];
+  const toSave=[]; // [sub, ans, clueIndex] for updating exportedAt
+
+  SUBS.forEach(sub=>{
+    const data=clueCache[sub]||{};
+    Object.entries(data).forEach(([ans,e])=>{
+      e.clues.forEach((c,ci)=>{
+        if(mode==='new'&&c.exportedAt)return;
+        lines.push(c.text+'\t'+ans);
+        toSave.push({sub,ans,ci});
+      });
+    });
+  });
+
+  if(!lines.length){showToast(mode==='new'?'No new clues to export':'No clues to export');return;}
+
+  // Stamp exportedAt on all exported clues and save
+  for(const {sub,ans,ci} of toSave){
+    clueCache[sub][ans].clues[ci].exportedAt=now;
+  }
+  // Save affected answer entries to DB
+  const saved=new Set();
+  for(const {sub,ans} of toSave){
+    const key=sub+'||'+ans;
+    if(!saved.has(key)){await saveClueRec(sub,ans);saved.add(key);}
+  }
+
   const header='#separator:Tab\n#html:false\n#notetype:Basic\n#deck:QB Study\n';
   const blob=new Blob([header+lines.join('\n')],{type:'text/plain'});
   const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
-  a.download='qb_anki_export.txt';
+  a.download=`qb_anki_${mode==='new'?'new_':''}export_${new Date().toISOString().slice(0,10)}.txt`;
   a.click();
-  showToast(`Exported ${lines.length} cards for Anki`);
+  showToast(`Exported ${lines.length} card${lines.length!==1?'s':''} for Anki`);
 }
 
 // ── ANKI IMPORT ──────────────────────────────────────────────────
