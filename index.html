@@ -886,9 +886,35 @@ async function fetchAndStart(){
   }
 }
 
+// Smart sentence splitter — ignores periods after abbreviations,
+// initials, numbers, and common QB abbreviations like "Dr.", "St.", "U.S."
+function splitSentences(text){
+  // Common abbreviations that should NOT end a sentence
+  const abbrevs=/\b(Mr|Mrs|Ms|Dr|Prof|St|Mt|Jr|Sr|vs|etc|approx|avg|dept|est|govt|corp|inc|ltd|univ|fig|vol|no|op|pt|ft|sq|lat|lon|approx|govt|intl|natl|[A-Z]|[A-Z]\.[A-Z])\s*$/i;
+  const parts=text.split(/([.!?])\s+/);
+  const sents=[];
+  let cur='';
+  for(let i=0;i<parts.length;i+=2){
+    const chunk=parts[i];
+    const punc=parts[i+1]||'';
+    cur+=chunk+(punc||'');
+    const trimmed=cur.trimEnd().replace(/[.!?]$/,'').trimEnd();
+    // Check if the word before punctuation looks like an abbreviation
+    const lastWord=trimmed.split(/\s+/).pop()||'';
+    const isAbbrev=abbrevs.test(lastWord)||/^[A-Z]$/.test(lastWord)||/^\d+$/.test(lastWord);
+    const isEnd=i+2>=parts.length;
+    if((!isAbbrev&&punc)||isEnd){
+      if(cur.trim())sents.push(cur.trim());
+      cur='';
+    }
+  }
+  if(cur.trim())sents.push(cur.trim());
+  return sents.length?sents:[text];
+}
+
 function parseQ(tu){
   const raw=stripHTML(tu.question_sanitized||tu.question||'');
-  sentences=raw.split(/(?<=[.!?])\s+/).map(s=>s.trim()).filter(s=>s.length>0);
+  sentences=splitSentences(raw).filter(s=>s.length>0);
   words=raw.split(/\s+/);
   powerIdx=-1;let wc=0;
   sentences.forEach(sent=>{const sw=sent.split(/\s+/);if(sent.includes('(*)'))powerIdx=wc+sw.findIndex(w=>w.includes('(*)'));wc+=sw.length;});
@@ -978,8 +1004,7 @@ function renderPost(){
       sentHtml+=isClueWord?`<span class="w-read clue-ul">${w} </span>`:`<span class="w-read">${w} </span>`;
     });
     const esc=sent.replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;');
-    const isLast=si===sentences.length-1;
-    const btnHtml=isLast?`<button class="add-clue-btn" id="clueBtn${si}" onclick="openAddCluePopup('${esc}',${si})" title="Add clue">+</button>`:'';
+    const btnHtml=`<button class="add-clue-btn" id="clueBtn${si}" onclick="openAddCluePopup('${esc}',${si})" title="Add clue">+</button>`;
     html+=`${sentHtml}${btnHtml} `;
     gc+=sw.length;
   });
@@ -1203,10 +1228,12 @@ function renderLog(){
 
 function formatLogQWithBtns(item,logIdx){
   const raw=stripHTML(item.q.question_sanitized||item.q.question||'');
-  const lastSent=raw.trim();
-  const esc=lastSent.replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;');
-  const spanText=raw.replace(/\(\*\)/g,'<span class="power-w">(*)</span>');
-  return`${spanText}<button class="add-clue-btn" id="logBtn${logIdx}" onclick="openAddCluePopupFromLog(event,'${esc}',${logIdx})" title="Add clue">+</button>`;
+  const sents=splitSentences(raw).filter(s=>s.length>0);
+  return sents.map((sent,si)=>{
+    const esc=sent.replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;');
+    const spanText=sent.replace(/\(\*\)/g,'<span class="power-w">(*)</span>');
+    return`${spanText}<button class="add-clue-btn" id="logBtn${logIdx}_${si}" onclick="openAddCluePopupFromLog(event,'${esc}',${logIdx})" title="Add clue">+</button> `;
+  }).join('');
 }
 
 function toggleLog(i){document.getElementById('le'+i).classList.toggle('open');}
@@ -2014,10 +2041,10 @@ function formatPlogQ(item,plogIdx){
   if(powerCharIdx>0){
     powerWordIdx=stripHTML(qRaw.substring(0,powerCharIdx)).split(/\s+/).filter(w=>w).length;
   }
-
   const buzzAt=item.bwi>=0?item.bwi:null;
 
-  const renderedWords=plainWords.map((word,wi)=>{
+  // Build word spans with highlighting
+  const wordSpans=plainWords.map((word,wi)=>{
     const isPowerMark=word==='(*)';
     const isBuzzed=buzzAt!==null&&wi===buzzAt;
     const isPrePower=powerWordIdx!==null&&wi<powerWordIdx;
@@ -2026,12 +2053,21 @@ function formatPlogQ(item,plogIdx){
     else if(isBuzzed)cls+=' buzzed';
     else if(isPrePower)cls+=' pre-power';
     return`<span class="${cls}">${word}</span>`;
-  }).join(' ');
+  });
 
-  // One button at the very end of the full question
-  const fullText=stripHTML(qRaw);
-  const esc=fullText.replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;');
-  return`${renderedWords}<button class="add-clue-btn" onclick="openAddCluePopupFromPlog(event,'${esc}',${plogIdx})" title="Add clue">+</button>`;
+  // Split into smart sentences and attach a + button to each
+  const raw=stripHTML(qRaw);
+  const sents=splitSentences(raw).filter(s=>s.length>0);
+  let wordCursor=0;
+  const sentHtml=sents.map((sent,si)=>{
+    const sentWords=sent.split(/\s+/).filter(w=>w);
+    const sentSpans=wordSpans.slice(wordCursor,wordCursor+sentWords.length).join(' ');
+    wordCursor+=sentWords.length;
+    const esc=sent.replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;');
+    return`${sentSpans}<button class="add-clue-btn" onclick="openAddCluePopupFromPlog(event,'${esc}',${plogIdx})" title="Add clue">+</button> `;
+  }).join('');
+
+  return sentHtml;
 }
 
 let plogClueIdx=null;
