@@ -944,7 +944,8 @@ function renderPost(){
       sentHtml+=isClueWord?`<span class="w-read clue-ul">${w} </span>`:`<span class="w-read">${w} </span>`;
     });
     const esc=sent.replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;');
-    const btnHtml=`<button class="add-clue-btn" id="clueBtn${si}" onclick="openAddCluePopup('${esc}',${si})" title="Add clue">+</button>`;
+    const isLast=si===sentences.length-1;
+    const btnHtml=isLast?`<button class="add-clue-btn" id="clueBtn${si}" onclick="openAddCluePopup('${esc}',${si})" title="Add clue">+</button>`:'';
     html+=`${sentHtml}${btnHtml} `;
     gc+=sw.length;
   });
@@ -1168,13 +1169,10 @@ function renderLog(){
 
 function formatLogQWithBtns(item,logIdx){
   const raw=stripHTML(item.q.question_sanitized||item.q.question||'');
-  const sents=raw.split(/(?<=[.!?])\s+/).map(s=>s.trim()).filter(s=>s.length>0);
-  return sents.map((sent,si)=>{
-    const esc=sent.replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;');
-    const spanText=sent.replace(/\(\*\)/g,'<span class="power-w">(*)</span>');
-    const btnId=`logBtn${logIdx}_${si}`;
-    return`${spanText}<button class="add-clue-btn" id="${btnId}" onclick="openAddCluePopupFromLog(event,'${esc}',${logIdx})" title="Add clue">+</button> `;
-  }).join('');
+  const lastSent=raw.trim();
+  const esc=lastSent.replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;');
+  const spanText=raw.replace(/\(\*\)/g,'<span class="power-w">(*)</span>');
+  return`${spanText}<button class="add-clue-btn" id="logBtn${logIdx}" onclick="openAddCluePopupFromLog(event,'${esc}',${logIdx})" title="Add clue">+</button>`;
 }
 
 function toggleLog(i){document.getElementById('le'+i).classList.toggle('open');}
@@ -1936,10 +1934,8 @@ function renderPlogBuzzBar(item){
 function formatPlogQ(item,plogIdx){
   if(!item.q)return'';
   const qRaw=item.q.question_sanitized||item.q.question||'';
-  // Build word list preserving (*) marker
   const plainWords=stripHTML(qRaw).split(/\s+/).filter(w=>w);
 
-  // Find power word index in plain text
   const powerCharIdx=qRaw.indexOf('(*)');
   let powerWordIdx=null;
   if(powerCharIdx>0){
@@ -1948,7 +1944,7 @@ function formatPlogQ(item,plogIdx){
 
   const buzzAt=item.bwi>=0?item.bwi:null;
 
-  const rendered=plainWords.map((word,wi)=>{
+  const renderedWords=plainWords.map((word,wi)=>{
     const isPowerMark=word==='(*)';
     const isBuzzed=buzzAt!==null&&wi===buzzAt;
     const isPrePower=powerWordIdx!==null&&wi<powerWordIdx;
@@ -1959,30 +1955,10 @@ function formatPlogQ(item,plogIdx){
     return`<span class="${cls}">${word}</span>`;
   }).join(' ');
 
-  // Split into sentences for + buttons
-  const sents=stripHTML(qRaw).split(/(?<=[.!?])\s+/).map(s=>s.trim()).filter(s=>s.length>0);
-  // We already rendered word-by-word; now attach + buttons per sentence
-  // Rebuild sentence-by-sentence with + buttons appended
-  let wordCursor=0;
-  const sentHtml=sents.map((sent,si)=>{
-    const sentWords=sent.split(/\s+/).filter(w=>w);
-    const sentRendered=sentWords.map((word,wi)=>{
-      const globalWi=wordCursor+wi;
-      const isPowerMark=word==='(*)';
-      const isBuzzed=buzzAt!==null&&globalWi===buzzAt;
-      const isPrePower=powerWordIdx!==null&&globalWi<powerWordIdx;
-      let cls='qw';
-      if(isPowerMark)cls+=' power-mark';
-      else if(isBuzzed)cls+=' buzzed';
-      else if(isPrePower)cls+=' pre-power';
-      return`<span class="${cls}">${word}</span>`;
-    }).join(' ');
-    wordCursor+=sentWords.length;
-    const esc=sent.replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;');
-    return`${sentRendered}<button class="add-clue-btn" onclick="openAddCluePopupFromPlog(event,'${esc}',${plogIdx})" title="Add clue">+</button> `;
-  }).join('');
-
-  return sentHtml;
+  // One button at the very end of the full question
+  const fullText=stripHTML(qRaw);
+  const esc=fullText.replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;');
+  return`${renderedWords}<button class="add-clue-btn" onclick="openAddCluePopupFromPlog(event,'${esc}',${plogIdx})" title="Add clue">+</button>`;
 }
 
 let plogClueIdx=null;
