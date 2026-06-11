@@ -316,8 +316,15 @@ input[type=number]:focus,input[type=text]:focus{border-color:var(--accent);}
 .export-opt input[type=radio]{accent-color:var(--accent);margin-top:2px;flex-shrink:0;}
 .export-opt-title{font-size:13px;font-weight:600;margin-bottom:2px;}
 .export-opt-sub{font-size:11px;color:var(--text2);}
+.multi-clue-list{display:flex;flex-direction:column;gap:6px;margin-bottom:6px;}
+.multi-clue-row{display:flex;gap:6px;align-items:center;}
+.multi-clue-row input{flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:8px 11px;font-size:13px;color:var(--text);font-family:var(--font);outline:none;}
+.multi-clue-row input:focus{border-color:var(--accent);}
+.multi-clue-remove{background:none;border:none;cursor:pointer;color:var(--text2);font-size:16px;padding:0 4px;line-height:1;transition:color .15s;flex-shrink:0;}
+.multi-clue-remove:hover{color:var(--red);}
+.multi-clue-add{background:none;border:1px dashed var(--border);border-radius:6px;color:var(--text2);font-size:12px;cursor:pointer;padding:7px;width:100%;transition:all .15s;font-family:var(--font);}
+.multi-clue-add:hover{border-color:var(--accent);color:var(--accent);}
 </style>
-</head>
 <body data-theme="dark">
 <nav>
   <div class="nav-logo">QBAtlas</div>
@@ -590,8 +597,8 @@ input[type=number]:focus,input[type=text]:focus{border-color:var(--accent);}
 
 <!-- NEW CLUE POPUP -->
 <div class="popup-overlay" id="newClueOverlay">
-  <div class="popup-box">
-    <div class="popup-title">Add New Clue</div>
+  <div class="popup-box" style="max-width:500px;width:95%;">
+    <div class="popup-title">Add New Clues</div>
     <div class="dup-warning" id="newDupWarning"></div>
     <div class="popup-field">
       <div class="popup-field-label">Subject</div>
@@ -615,12 +622,13 @@ input[type=number]:focus,input[type=text]:focus{border-color:var(--accent);}
       <input type="text" class="popup-input" id="newClueAnswer" placeholder="e.g. General Relativity" style="display:block" oninput="checkNewDup()">
     </div>
     <div class="popup-field">
-      <div class="popup-field-label">Clue</div>
-      <input type="text" class="popup-input" id="newClueText" placeholder="e.g. Ricci tensor" style="display:block" oninput="checkNewDup()">
+      <div class="popup-field-label">Clues</div>
+      <div class="multi-clue-list" id="newClueList"></div>
+      <button class="multi-clue-add" onclick="addNewClueRow()">+ Add another clue</button>
     </div>
     <div class="popup-btns">
       <button class="popup-cancel" onclick="closePopup('newClueOverlay')">Cancel</button>
-      <button class="popup-confirm" onclick="confirmNewClue()">Add Clue</button>
+      <button class="popup-confirm" onclick="confirmNewClue()">Add Clues</button>
     </div>
   </div>
 </div>
@@ -1281,12 +1289,13 @@ function checkDupWarning(){
 function checkNewDup(){
   const sub=document.getElementById('newClueSub').value;
   const ans=document.getElementById('newClueAnswer').value.trim();
-  const text=document.getElementById('newClueText').value.trim();
   const w=document.getElementById('newDupWarning');
-  if(!ans||!text){w.classList.remove('visible');return;}
-  const dup=findDuplicateClue(sub,ans,text);
-  if(dup){w.textContent=`⚠ Similar clue already exists: "${dup}"`;w.classList.add('visible');}
-  else{w.classList.remove('visible');}
+  if(!ans){w.classList.remove('visible');return;}
+  // Check all filled-in clue rows for duplicates
+  const inputs=[...document.getElementById('newClueList').querySelectorAll('input')];
+  const dups=inputs.map(i=>i.value.trim()).filter(t=>t).map(t=>findDuplicateClue(sub,ans,t)).filter(Boolean);
+  if(dups.length){w.textContent=`⚠ Similar clue already exists: "${dups[0]}"`;w.classList.add('visible');}
+  else w.classList.remove('visible');
 }
 function findDuplicateClue(sub,ans,text){
   if(!text||text.length<3)return null;
@@ -1842,21 +1851,53 @@ function showToast(msg){const t=document.getElementById('toast');t.textContent=m
 // ── NEW CLUE FROM CLUES TAB ──────────────────────────────────────
 function openNewCluePopup(){
   document.getElementById('newClueAnswer').value='';
-  document.getElementById('newClueText').value='';
+  document.getElementById('newDupWarning').classList.remove('visible');
+  // Reset to one empty row
+  document.getElementById('newClueList').innerHTML='';
+  addNewClueRow();
   document.getElementById('newClueOverlay').classList.add('open');
   setTimeout(()=>document.getElementById('newClueAnswer').focus(),100);
+}
+function addNewClueRow(val=''){
+  const list=document.getElementById('newClueList');
+  const idx=list.children.length;
+  const row=document.createElement('div');
+  row.className='multi-clue-row';
+  row.innerHTML=`<input type="text" placeholder="e.g. Ricci tensor" value="${val.replace(/"/g,'&quot;')}" oninput="checkNewDup()" onkeydown="newClueRowKey(event,this)">
+    <button class="multi-clue-remove" onclick="removeNewClueRow(this)" title="Remove">×</button>`;
+  list.appendChild(row);
+  row.querySelector('input').focus();
+}
+function removeNewClueRow(btn){
+  const list=document.getElementById('newClueList');
+  if(list.children.length>1)btn.closest('.multi-clue-row').remove();
+}
+function newClueRowKey(e,input){
+  // Enter on last row adds a new one; Tab on last row also adds one
+  if(e.key==='Enter'){
+    e.preventDefault();
+    const list=document.getElementById('newClueList');
+    const rows=[...list.querySelectorAll('input')];
+    if(rows.indexOf(input)===rows.length-1)addNewClueRow();
+    else rows[rows.indexOf(input)+1].focus();
+  }
 }
 async function confirmNewClue(){
   const sub=document.getElementById('newClueSub').value;
   const ans=document.getElementById('newClueAnswer').value.trim();
-  const text=document.getElementById('newClueText').value.trim();
   if(!ans){showToast('Please enter an answer');return;}
-  if(!text){showToast('Please enter a clue');return;}
-  const added=await addClue(sub,ans,text);
-  await syncFC(sub,ans,text);
+  const inputs=[...document.getElementById('newClueList').querySelectorAll('input')];
+  const clues=inputs.map(i=>i.value.trim()).filter(t=>t.length>0);
+  if(!clues.length){showToast('Please enter at least one clue');return;}
+  let added=0,skipped=0;
+  for(const text of clues){
+    const ok=await addClue(sub,ans,text);
+    await syncFC(sub,ans,text);
+    if(ok)added++;else skipped++;
+  }
   closePopup('newClueOverlay');
   renderClues();
-  showToast(added?'Clue added!':'Clue already exists');
+  showToast(`Added ${added} clue${added!==1?'s':''}${skipped?`, ${skipped} duplicate${skipped!==1?'s':''} skipped`:''}`);
 }
 // ── INIT ─────────────────────────────────────────────────────────
 (async()=>{
