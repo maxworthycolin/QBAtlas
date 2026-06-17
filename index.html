@@ -324,6 +324,15 @@ input[type=number]:focus,input[type=text]:focus{border-color:var(--accent);}
 .multi-clue-remove:hover{color:var(--red);}
 .multi-clue-add{background:none;border:1px dashed var(--border);border-radius:6px;color:var(--text2);font-size:12px;cursor:pointer;padding:7px;width:100%;transition:all .15s;font-family:var(--font);}
 .multi-clue-add:hover{border-color:var(--accent);color:var(--accent);}
+.import-mode-tabs{display:flex;gap:0;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:3px;margin-bottom:16px;}
+.import-mode-tab{flex:1;padding:7px;border-radius:6px;font-size:13px;font-weight:500;color:var(--text2);cursor:pointer;transition:all .15s;text-align:center;}
+.import-mode-tab.active{background:var(--bg2);color:var(--accent);box-shadow:0 1px 4px rgba(0,0,0,.2);}
+.import-textarea{width:100%;min-height:160px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:11px 13px;font-size:13px;color:var(--text);font-family:var(--mono);outline:none;resize:vertical;line-height:1.7;box-sizing:border-box;}
+.import-textarea:focus{border-color:var(--accent);}
+.import-drop-zone{border:2px dashed var(--border);border-radius:10px;padding:32px;text-align:center;cursor:pointer;transition:all .15s;color:var(--text2);font-size:13px;}
+.import-drop-zone:hover,.import-drop-zone.drag-over{border-color:var(--accent);color:var(--accent);background:rgba(99,179,237,.05);}
+.import-drop-icon{font-size:32px;margin-bottom:8px;}
+.import-format-hint{font-size:11px;color:var(--text2);margin-top:10px;line-height:1.6;font-family:var(--mono);}
 </style>
 <body data-theme="dark">
 <nav>
@@ -455,7 +464,7 @@ input[type=number]:focus,input[type=text]:focus{border-color:var(--accent);}
     <input type="text" class="clue-search" id="clueSearch" placeholder="Search answer lines..." oninput="filterClues()">
     <button class="tool-btn" onclick="openNewCluePopup()">➕ New Clue</button>
     <button class="tool-btn" onclick="openExportAnkiPopup()">📤 Export for Anki</button>
-    <button class="tool-btn" onclick="importAnki()">📥 Import from Anki</button>
+    <button class="tool-btn" onclick="openImportPopup()">📥 Import</button>
     <button class="tool-btn" onclick="downloadJSON()">⬇ Backup JSON</button>
     <button class="tool-btn" onclick="importJSON()">⬆ Import JSON</button>
   </div>
@@ -568,6 +577,44 @@ input[type=number]:focus,input[type=text]:focus{border-color:var(--accent);}
     <div class="popup-btns">
       <button class="popup-cancel" onclick="closePopup('ankiExportOverlay')">Cancel</button>
       <button class="popup-confirm" onclick="doExportAnki()">📤 Export</button>
+    </div>
+  </div>
+</div>
+
+<!-- IMPORT POPUP -->
+<div class="popup-overlay" id="importOverlay">
+  <div class="popup-box" style="max-width:520px;width:95%;">
+    <div class="popup-title">Import Clues</div>
+    <div class="import-mode-tabs">
+      <div class="import-mode-tab active" onclick="switchImportMode('paste',this)">✏️ Paste Text</div>
+      <div class="import-mode-tab" onclick="switchImportMode('file',this)">📄 Upload File</div>
+    </div>
+
+    <!-- PASTE MODE -->
+    <div id="importPasteMode">
+      <textarea class="import-textarea" id="importPasteArea"
+        placeholder="ANSWER ; clue 1, clue 2, clue 3&#10;&#10;Example:&#10;Ampere's Law ; magnetic analog of Faraday's law, corrected by Maxwell, line integral of B equals μ₀I&#10;Faraday's Law ; induced emf from changing flux, Lenz's law gives negative sign, eddy currents"></textarea>
+      <div class="import-format-hint">Format: <b>ANSWER ; clue 1, clue 2, clue 3</b> — one answer per line. Also accepts Anki tab-separated files.</div>
+    </div>
+
+    <!-- FILE MODE -->
+    <div id="importFileMode" style="display:none;">
+      <div class="import-drop-zone" id="importDropZone" onclick="triggerImportFile()" ondragover="importDragOver(event)" ondragleave="importDragLeave(event)" ondrop="importDrop(event)">
+        <div class="import-drop-icon">📂</div>
+        <div>Click to choose a file, or drag and drop</div>
+        <div style="font-size:11px;margin-top:4px;color:var(--text2)">.txt, .tsv, .csv accepted</div>
+      </div>
+      <div class="import-format-hint" style="margin-top:12px;">
+        Accepted formats:<br>
+        • <b>QBAtlas format:</b> ANSWER ; clue 1, clue 2, clue 3<br>
+        • <b>Anki plain text:</b> clue [tab] answer (with optional #separator header)
+      </div>
+      <div id="importFileStatus" style="margin-top:10px;font-size:12px;color:var(--text2);font-family:var(--mono);"></div>
+    </div>
+
+    <div class="popup-btns" style="margin-top:16px;">
+      <button class="popup-cancel" onclick="closePopup('importOverlay')">Cancel</button>
+      <button class="popup-confirm" id="importConfirmBtn" onclick="executeImport()">Import</button>
     </div>
   </div>
 </div>
@@ -1648,59 +1695,138 @@ async function doExportAnki(){
 // ── ANKI IMPORT ──────────────────────────────────────────────────
 // Accepts Anki tab-separated export: Front\tBack
 // Front = clue text(s) separated by <br> or newlines. Back = answer.
-function importAnki(){
+// ── IMPORT ENGINE ─────────────────────────────────────────────────
+let importMode='paste';
+let importFileText=null;
+
+function openImportPopup(){
+  importFileText=null;
+  document.getElementById('importPasteArea').value='';
+  document.getElementById('importFileStatus').textContent='';
+  document.getElementById('importDropZone').classList.remove('drag-over');
+  switchImportMode('paste',document.querySelector('.import-mode-tab'));
+  document.getElementById('importOverlay').classList.add('open');
+}
+
+function switchImportMode(mode,el){
+  importMode=mode;
+  document.querySelectorAll('.import-mode-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('importPasteMode').style.display=mode==='paste'?'block':'none';
+  document.getElementById('importFileMode').style.display=mode==='file'?'block':'none';
+}
+
+function triggerImportFile(){
   const inp=document.createElement('input');inp.type='file';inp.accept='.txt,.tsv,.csv';
-  inp.onchange=async e=>{
+  inp.onchange=e=>{
     const f=e.target.files[0];if(!f)return;
-    try{
-      const text=await f.text();
-      const lines=text.split(/\r?\n/);
-      let imported=0,skipped=0;
-
-      for(const line of lines){
-        const trimmed=line.trim();
-        if(!trimmed||trimmed.startsWith('#'))continue;
-
-        // Split on TAB — Anki plain text uses tab as separator
-        const cols=trimmed.split('\t');
-
-        // Clean each column: strip quotes, strip HTML, collapse whitespace
-        const clean=cols.map(c=>{
-          let s=c.trim();
-          // Strip outer quotes and unescape inner ""
-          if(s.startsWith('"')&&s.endsWith('"'))s=s.slice(1,-1).replace(/""/g,'"');
-          // Strip HTML tags
-          s=s.replace(/<[^>]+>/g,' ');
-          // Decode common HTML entities
-          s=s.replace(/&nbsp;/g,' ').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"');
-          return s.replace(/\s+/g,' ').trim();
-        }).filter(c=>c.length>0); // drop empty cols (trailing tabs)
-
-        if(clean.length<2)continue;
-
-        // First non-empty col = clue, last non-empty col = answer
-        let clueText=clean[0];
-        let ans=clean[clean.length-1];
-
-        // Edge case: answer embedded in clue like "curl B = μ₀J : Ampere's Law"
-        // If clue contains " : Answer" at the end matching the answer field, strip it
-        const colonPattern=new RegExp('\\s*:\\s*'+escapeRegex(ans)+'\\s*$','i');
-        clueText=clueText.replace(colonPattern,'').trim();
-
-        if(!clueText||!ans||clueText===ans)continue;
-
-        const sub=subKey(ans);
-        const added=await addClue(sub,ans,clueText);
-        await syncFC(sub,ans,clueText);
-        if(added)imported++;else skipped++;
-      }
-
-      await backfillFC();
-      renderClues();
-      showToast(`Imported ${imported} clue${imported!==1?'s':''}, ${skipped} duplicate${skipped!==1?'s':''} skipped`);
-    }catch(err){showToast('Import failed: '+err.message);console.error(err);}
+    const r=new FileReader();
+    r.onload=ev=>{
+      importFileText=ev.target.result;
+      document.getElementById('importFileStatus').textContent=`✓ Loaded: ${f.name} (${f.size.toLocaleString()} bytes)`;
+    };
+    r.readAsText(f);
   };inp.click();
 }
+function importDragOver(e){e.preventDefault();document.getElementById('importDropZone').classList.add('drag-over');}
+function importDragLeave(e){document.getElementById('importDropZone').classList.remove('drag-over');}
+function importDrop(e){
+  e.preventDefault();
+  document.getElementById('importDropZone').classList.remove('drag-over');
+  const f=e.dataTransfer.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=ev=>{
+    importFileText=ev.target.result;
+    document.getElementById('importFileStatus').textContent=`✓ Loaded: ${f.name} (${f.size.toLocaleString()} bytes)`;
+  };
+  r.readAsText(f);
+}
+
+async function executeImport(){
+  const text=importMode==='paste'
+    ?document.getElementById('importPasteArea').value.trim()
+    :importFileText;
+  if(!text){showToast('Nothing to import');return;}
+  const {imported,skipped}=await parseAndImport(text);
+  await backfillFC();
+  renderClues();
+  closePopup('importOverlay');
+  showToast(`Imported ${imported} clue${imported!==1?'s':''}, ${skipped} duplicate${skipped!==1?'s':''} skipped`);
+}
+
+// Universal parser — handles both QBAtlas format and Anki tab format
+async function parseAndImport(text){
+  let imported=0,skipped=0;
+  const lines=text.split(/\r?\n/);
+
+  // Detect format by scanning first non-comment, non-empty line
+  let sampleLine='';
+  for(const l of lines){
+    const t=l.trim();
+    if(t&&!t.startsWith('#')){sampleLine=t;break;}
+  }
+  const isQBAtlas=sampleLine.includes(';');
+  const isAnki=sampleLine.includes('\t');
+
+  for(const line of lines){
+    const trimmed=line.trim();
+    if(!trimmed||trimmed.startsWith('#'))continue;
+
+    if(isQBAtlas){
+      // QBAtlas format: ANSWER ; clue1, clue2, clue3
+      const semi=trimmed.indexOf(';');
+      if(semi<0)continue;
+      const ans=trimmed.substring(0,semi).trim();
+      const cluesPart=trimmed.substring(semi+1).trim();
+      if(!ans||!cluesPart)continue;
+      // Split clues by comma, but not commas inside parentheses
+      const clues=splitCluesList(cluesPart);
+      const sub=subKey(ans);
+      for(const clueText of clues){
+        if(!clueText)continue;
+        const ok=await addClue(sub,ans,clueText);
+        await syncFC(sub,ans,clueText);
+        if(ok)imported++;else skipped++;
+      }
+    } else if(isAnki){
+      // Anki tab format: clue [tab...] answer
+      const cols=trimmed.split('\t')
+        .map(c=>{
+          let s=c.trim();
+          if(s.startsWith('"')&&s.endsWith('"'))s=s.slice(1,-1).replace(/""/g,'"');
+          s=s.replace(/<[^>]+>/g,' ').replace(/&nbsp;/g,' ').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"');
+          return s.replace(/\s+/g,' ').trim();
+        }).filter(c=>c.length>0);
+      if(cols.length<2)continue;
+      let clueText=cols[0];
+      const ans=cols[cols.length-1];
+      // Strip embedded answer from clue if present
+      const colonPat=new RegExp('\\s*:\\s*'+escapeRegex(ans)+'\\s*$','i');
+      clueText=clueText.replace(colonPat,'').trim();
+      if(!clueText||!ans||clueText===ans)continue;
+      const sub=subKey(ans);
+      const ok=await addClue(sub,ans,clueText);
+      await syncFC(sub,ans,clueText);
+      if(ok)imported++;else skipped++;
+    }
+  }
+  return{imported,skipped};
+}
+
+// Split "clue1, clue2, clue3" respecting parentheses
+function splitCluesList(str){
+  const clues=[];let cur='',depth=0;
+  for(const ch of str){
+    if(ch==='('||ch==='['||ch==='{')depth++;
+    else if(ch===')'||ch===']'||ch==='}')depth--;
+    else if(ch===','&&depth===0){clues.push(cur.trim());cur='';continue;}
+    cur+=ch;
+  }
+  if(cur.trim())clues.push(cur.trim());
+  return clues.filter(c=>c.length>0);
+}
+
+function importAnki(){openImportPopup();}
 
 function escapeRegex(s){return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');}
 
