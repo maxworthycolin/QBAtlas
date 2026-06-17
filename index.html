@@ -333,6 +333,19 @@ input[type=number]:focus,input[type=text]:focus{border-color:var(--accent);}
 .import-drop-zone:hover,.import-drop-zone.drag-over{border-color:var(--accent);color:var(--accent);background:rgba(99,179,237,.05);}
 .import-drop-icon{font-size:32px;margin-bottom:8px;}
 .import-format-hint{font-size:11px;color:var(--text2);margin-top:10px;line-height:1.6;font-family:var(--mono);}
+.dup-review-list{max-height:260px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;margin:10px 0;}
+.dup-review-item{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:12px;}
+.dup-review-ans{font-weight:700;font-size:13px;margin-bottom:4px;color:var(--text);}
+.dup-review-clue{color:var(--text2);margin-bottom:6px;font-family:var(--mono);}
+.dup-review-existing{font-size:11px;color:var(--yellow);margin-bottom:6px;}
+.dup-review-choice{display:flex;gap:8px;}
+.dup-choice-btn{padding:4px 12px;border-radius:5px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:var(--bg2);color:var(--text2);transition:all .15s;}
+.dup-choice-btn.selected-skip{background:rgba(224,85,85,.15);border-color:var(--red);color:var(--red);}
+.dup-choice-btn.selected-keep{background:rgba(72,187,120,.15);border-color:var(--green);color:var(--green);}
+.dup-bulk-bar{display:flex;gap:8px;margin-bottom:10px;align-items:center;}
+.dup-bulk-label{font-size:11px;color:var(--text2);margin-right:4px;}
+.dup-bulk-btn{padding:4px 12px;border-radius:5px;font-size:11px;cursor:pointer;border:1px solid var(--border);background:var(--bg2);color:var(--text2);transition:all .15s;}
+.dup-bulk-btn:hover{border-color:var(--accent);color:var(--accent);}
 </style>
 <body data-theme="dark">
 <nav>
@@ -594,7 +607,7 @@ input[type=number]:focus,input[type=text]:focus{border-color:var(--accent);}
     <div id="importPasteMode">
       <textarea class="import-textarea" id="importPasteArea"
         placeholder="ANSWER ; clue 1, clue 2, clue 3&#10;&#10;Example:&#10;Ampere's Law ; magnetic analog of Faraday's law, corrected by Maxwell, line integral of B equals μ₀I&#10;Faraday's Law ; induced emf from changing flux, Lenz's law gives negative sign, eddy currents"></textarea>
-      <div class="import-format-hint">Format: <b>ANSWER ; clue 1, clue 2, clue 3</b> — one answer per line. Also accepts Anki tab-separated files.</div>
+      <div class="import-format-hint">Format: <b>ANSWER ; clue 1, clue 2, clue 3</b> — one answer per line. Also accepts Anki tab-separated text.</div>
     </div>
 
     <!-- FILE MODE -->
@@ -607,14 +620,52 @@ input[type=number]:focus,input[type=text]:focus{border-color:var(--accent);}
       <div class="import-format-hint" style="margin-top:12px;">
         Accepted formats:<br>
         • <b>QBAtlas format:</b> ANSWER ; clue 1, clue 2, clue 3<br>
-        • <b>Anki plain text:</b> clue [tab] answer (with optional #separator header)
+        • <b>Anki plain text:</b> clue [tab] answer
       </div>
       <div id="importFileStatus" style="margin-top:10px;font-size:12px;color:var(--text2);font-family:var(--mono);"></div>
     </div>
 
+    <!-- SUBJECT OVERRIDE -->
+    <div style="margin-top:14px;">
+      <div class="popup-field-label" style="margin-bottom:6px;">Subject <span style="color:var(--text2);font-weight:400">(optional — overrides auto-detect)</span></div>
+      <select id="importSubjectOverride" style="width:100%;background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:6px;font-size:13px;padding:8px 12px;cursor:pointer;outline:none;">
+        <option value="">Auto-detect from answer</option>
+        <option value="SCI">Science (SCI)</option>
+        <option value="HIS">History (HIS)</option>
+        <option value="LIT">Literature (LIT)</option>
+        <option value="FA">Fine Arts (FA)</option>
+        <option value="REL">Religion (REL)</option>
+        <option value="MYTH">Mythology (MYTH)</option>
+        <option value="PHIL">Philosophy (PHIL)</option>
+        <option value="SS">Social Science (SS)</option>
+        <option value="CE">Current Events (CE)</option>
+        <option value="GEO">Geography (GEO)</option>
+        <option value="OTHER">Other Academic (OTHER)</option>
+        <option value="TRASH">Trash / Pop Culture (TRASH)</option>
+      </select>
+    </div>
+
     <div class="popup-btns" style="margin-top:16px;">
       <button class="popup-cancel" onclick="closePopup('importOverlay')">Cancel</button>
-      <button class="popup-confirm" id="importConfirmBtn" onclick="executeImport()">Import</button>
+      <button class="popup-confirm" id="importConfirmBtn" onclick="executeImport()">Review & Import</button>
+    </div>
+  </div>
+</div>
+
+<!-- DUP REVIEW POPUP -->
+<div class="popup-overlay" id="dupReviewOverlay">
+  <div class="popup-box" style="max-width:540px;width:95%;">
+    <div class="popup-title">Review Duplicates</div>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:10px;">These clues already exist in your database. Choose what to do with each.</p>
+    <div class="dup-bulk-bar">
+      <span class="dup-bulk-label">All:</span>
+      <button class="dup-bulk-btn" onclick="setAllDupChoice('skip')">Skip all duplicates</button>
+      <button class="dup-bulk-btn" onclick="setAllDupChoice('keep')">Keep all copies</button>
+    </div>
+    <div class="dup-review-list" id="dupReviewList"></div>
+    <div class="popup-btns" style="margin-top:14px;">
+      <button class="popup-cancel" onclick="closePopup('dupReviewOverlay')">Cancel</button>
+      <button class="popup-confirm" onclick="finalizeDupImport()">Import</button>
     </div>
   </div>
 </div>
@@ -1747,49 +1798,118 @@ async function executeImport(){
     ?document.getElementById('importPasteArea').value.trim()
     :importFileText;
   if(!text){showToast('Nothing to import');return;}
-  const {imported,skipped}=await parseAndImport(text);
-  await backfillFC();
-  renderClues();
-  closePopup('importOverlay');
-  showToast(`Imported ${imported} clue${imported!==1?'s':''}, ${skipped} duplicate${skipped!==1?'s':''} skipped`);
+  const subOverride=document.getElementById('importSubjectOverride').value||'';
+
+  // Parse into {ans, clueText, sub} objects
+  const parsed=parseImportText(text,subOverride);
+  if(!parsed.length){showToast('No valid clues found in input');return;}
+
+  // Separate into clean (new) and dups
+  const clean=[];const dups=[];
+  for(const item of parsed){
+    const existing=findDuplicateClue(item.sub,item.ans,item.clueText);
+    if(existing)dups.push({...item,existing});
+    else clean.push(item);
+  }
+
+  if(dups.length===0){
+    // No dups — import directly
+    let imported=0;
+    for(const item of clean){
+      const ok=await addClue(item.sub,item.ans,item.clueText);
+      await syncFC(item.sub,item.ans,item.clueText);
+      if(ok)imported++;
+    }
+    await backfillFC();renderClues();
+    closePopup('importOverlay');
+    showToast(`Imported ${imported} clue${imported!==1?'s':''} — no duplicates found`);
+  } else {
+    // Show dup review popup
+    pendingImportClean=clean;
+    pendingImportDups=dups.map(d=>({...d,choice:'skip'}));
+    renderDupReview();
+    closePopup('importOverlay');
+    document.getElementById('dupReviewOverlay').classList.add('open');
+  }
 }
 
-// Universal parser — handles both QBAtlas format and Anki tab format
-async function parseAndImport(text){
-  let imported=0,skipped=0;
-  const lines=text.split(/\r?\n/);
+let pendingImportClean=[];
+let pendingImportDups=[];
 
-  // Detect format by scanning first non-comment, non-empty line
-  let sampleLine='';
-  for(const l of lines){
-    const t=l.trim();
-    if(t&&!t.startsWith('#')){sampleLine=t;break;}
+function renderDupReview(){
+  const list=document.getElementById('dupReviewList');
+  list.innerHTML=pendingImportDups.map((item,i)=>`
+    <div class="dup-review-item">
+      <div class="dup-review-ans">${item.ans}</div>
+      <div class="dup-review-clue">New clue: <b>${item.clueText}</b></div>
+      <div class="dup-review-existing">⚠ Similar existing: "${item.existing}"</div>
+      <div class="dup-review-choice">
+        <button class="dup-choice-btn ${item.choice==='skip'?'selected-skip':''}" onclick="setDupChoice(${i},'skip')">Skip (don't import)</button>
+        <button class="dup-choice-btn ${item.choice==='keep'?'selected-keep':''}" onclick="setDupChoice(${i},'keep')">Keep both</button>
+      </div>
+    </div>`).join('');
+}
+function setDupChoice(i,choice){
+  pendingImportDups[i].choice=choice;
+  renderDupReview();
+}
+function setAllDupChoice(choice){
+  pendingImportDups.forEach(d=>d.choice=choice);
+  renderDupReview();
+}
+async function finalizeDupImport(){
+  let imported=0,skipped=0;
+  // Import clean ones
+  for(const item of pendingImportClean){
+    const ok=await addClue(item.sub,item.ans,item.clueText);
+    await syncFC(item.sub,item.ans,item.clueText);
+    if(ok)imported++;
   }
+  // Import dups based on choice
+  for(const item of pendingImportDups){
+    if(item.choice==='keep'){
+      // Force-add even if similar exists — use addClueForce
+      await addClueForce(item.sub,item.ans,item.clueText);
+      await syncFC(item.sub,item.ans,item.clueText);
+      imported++;
+    } else skipped++;
+  }
+  await backfillFC();renderClues();
+  closePopup('dupReviewOverlay');
+  showToast(`Imported ${imported} clue${imported!==1?'s':''}${skipped?`, ${skipped} duplicate${skipped!==1?'s':''} skipped`:''}`);
+}
+
+// Force-add a clue even if a similar one exists
+async function addClueForce(sub,ans,text){
+  if(!clueCache[sub])clueCache[sub]={};
+  if(!clueCache[sub][ans])clueCache[sub][ans]={clues:[],totalMisses:0};
+  clueCache[sub][ans].clues.push({text,misses:0});
+  await saveClueRec(sub,ans);
+  return true;
+}
+
+// Parse raw import text into [{ans, clueText, sub}] array
+function parseImportText(text,subOverride){
+  const lines=text.split(/\r?\n/);
+  const results=[];
+  let sampleLine='';
+  for(const l of lines){const t=l.trim();if(t&&!t.startsWith('#')){sampleLine=t;break;}}
   const isQBAtlas=sampleLine.includes(';');
-  const isAnki=sampleLine.includes('\t');
 
   for(const line of lines){
     const trimmed=line.trim();
     if(!trimmed||trimmed.startsWith('#'))continue;
-
     if(isQBAtlas){
-      // QBAtlas format: ANSWER ; clue1, clue2, clue3
       const semi=trimmed.indexOf(';');
       if(semi<0)continue;
       const ans=trimmed.substring(0,semi).trim();
       const cluesPart=trimmed.substring(semi+1).trim();
       if(!ans||!cluesPart)continue;
-      // Split clues by comma, but not commas inside parentheses
+      const sub=subOverride||subKey(ans);
       const clues=splitCluesList(cluesPart);
-      const sub=subKey(ans);
-      for(const clueText of clues){
-        if(!clueText)continue;
-        const ok=await addClue(sub,ans,clueText);
-        await syncFC(sub,ans,clueText);
-        if(ok)imported++;else skipped++;
-      }
-    } else if(isAnki){
-      // Anki tab format: clue [tab...] answer
+      clues.forEach(c=>{if(c)results.push({ans,clueText:c,sub});});
+    } else {
+      // Anki tab format
       const cols=trimmed.split('\t')
         .map(c=>{
           let s=c.trim();
@@ -1800,15 +1920,24 @@ async function parseAndImport(text){
       if(cols.length<2)continue;
       let clueText=cols[0];
       const ans=cols[cols.length-1];
-      // Strip embedded answer from clue if present
       const colonPat=new RegExp('\\s*:\\s*'+escapeRegex(ans)+'\\s*$','i');
       clueText=clueText.replace(colonPat,'').trim();
       if(!clueText||!ans||clueText===ans)continue;
-      const sub=subKey(ans);
-      const ok=await addClue(sub,ans,clueText);
-      await syncFC(sub,ans,clueText);
-      if(ok)imported++;else skipped++;
+      const sub=subOverride||subKey(ans);
+      results.push({ans,clueText,sub});
     }
+  }
+  return results;
+}
+
+// Universal parser — handles both QBAtlas format and Anki tab format
+async function parseAndImport(text){
+  let imported=0,skipped=0;
+  const parsed=parseImportText(text,'');
+  for(const item of parsed){
+    const ok=await addClue(item.sub,item.ans,item.clueText);
+    await syncFC(item.sub,item.ans,item.clueText);
+    if(ok)imported++;else skipped++;
   }
   return{imported,skipped};
 }
