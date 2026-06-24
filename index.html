@@ -6,20 +6,21 @@
 <title>QBAtlas</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#0f1117;--bg2:#1a1d27;--bg3:#22263a;--border:#2e3347;--text:#e8eaf0;--text2:#8b90a8;--accent:#4f8ef7;--red:#e05555;--green:#4caf7d;--yellow:#f0c040;--orange:#f07840;--font:'IBM Plex Sans',sans-serif;--mono:'IBM Plex Mono',monospace;}
-[data-theme="light"]{--bg:#f4f6fb;--bg2:#fff;--bg3:#e8ecf5;--border:#d0d5e8;--text:#1a1d2e;--text2:#6b7190;--accent:#2563eb;--red:#dc2626;--green:#16a34a;--yellow:#d97706;--orange:#ea580c;}
-[data-theme="og"]{--bg:#0d1b2e;--bg2:#1f3a5f;--bg3:#162d4a;--border:#2e5080;--text:#fff;--text2:#93b4d4;--accent:#2e75b6;--red:#c00000;--green:#375623;--yellow:#f0c040;--orange:#f07840;}
+:root{--bg:#0a0c12;--bg2:#13161f;--bg3:#1c1f2e;--border:#252836;--text:#e2e4ed;--text2:#7b8099;--accent:#4f8ef7;--red:#e05555;--green:#4caf7d;--yellow:#f0c040;--orange:#f07840;--font:'IBM Plex Sans',sans-serif;--mono:'IBM Plex Mono',monospace;}
+[data-theme="light"]{--bg:#f0f2f8;--bg2:#fff;--bg3:#e4e8f4;--border:#cdd2e8;--text:#181b2c;--text2:#636882;--accent:#2563eb;--red:#dc2626;--green:#16a34a;--yellow:#d97706;--orange:#ea580c;}
+[data-theme="original"]{--bg:#0d1b2e;--bg2:#1f3a5f;--bg3:#162d4a;--border:#2e5080;--text:#fff;--text2:#93b4d4;--accent:#2e75b6;--red:#c00000;--green:#375623;--yellow:#f0c040;--orange:#f07840;}
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;transition:background .2s,color .2s;}
-nav{display:flex;align-items:center;background:var(--bg2);border-bottom:1px solid var(--border);padding:0 24px;height:52px;position:sticky;top:0;z-index:100;}
-.nav-logo{font-family:var(--mono);font-weight:600;font-size:15px;color:var(--accent);margin-right:32px;letter-spacing:.05em;}
+nav{display:flex;align-items:center;background:var(--bg2);border-bottom:1px solid var(--border);padding:0 20px;height:54px;position:sticky;top:0;z-index:100;gap:0;}
+.nav-logo{font-family:var(--font);font-weight:700;font-size:20px;color:var(--text);margin-right:28px;letter-spacing:-.5px;white-space:nowrap;}
+.nav-logo span{color:var(--accent);}
 .nav-tabs{display:flex;flex:1;}
-.nav-tab{padding:0 20px;height:52px;display:flex;align-items:center;font-size:13px;font-weight:500;color:var(--text2);cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap;}
+.nav-tab{padding:0 18px;height:54px;display:flex;align-items:center;font-size:13px;font-weight:500;color:var(--text2);cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap;}
 .nav-tab:hover{color:var(--text);}
 .nav-tab.active{color:var(--accent);border-bottom-color:var(--accent);}
-.nav-right{display:flex;align-items:center;gap:8px;margin-left:auto;}
-.theme-btn{padding:5px 10px;border-radius:6px;border:1px solid var(--border);background:var(--bg3);color:var(--text2);font-size:11px;cursor:pointer;font-family:var(--mono);transition:all .15s;}
-.theme-btn:hover,.theme-btn.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+.nav-right{display:flex;align-items:center;gap:6px;margin-left:auto;}
+.theme-select{background:var(--bg3);border:1px solid var(--border);color:var(--text2);font-size:12px;font-family:var(--mono);border-radius:6px;padding:5px 8px;cursor:pointer;outline:none;transition:border-color .15s;}
+.theme-select:hover{border-color:var(--accent);}
 .panel{display:none;padding:24px;max-width:1100px;margin:0 auto;}
 .panel.active{display:block;}
 
@@ -266,7 +267,7 @@ input[type=number]:focus,input[type=text]:focus{border-color:var(--accent);}
 .plog-buzz-dot{position:absolute;top:50%;transform:translate(-50%,-50%);width:14px;height:14px;border-radius:50%;border:2px solid var(--bg2);}
 /* Question text word highlighting */
 .plog-q-text{font-size:13px;line-height:2;margin-bottom:10px;word-break:break-word;}
-.qw{display:inline;}
+.qw{display:inline;white-space:normal;word-spacing:normal;letter-spacing:normal;}
 .qw.power-mark{color:var(--yellow);font-weight:700;}
 .qw.buzzed{background:var(--accent);color:#fff;border-radius:3px;padding:1px 3px;}
 .qw.pre-power{color:var(--yellow);opacity:.7;}
@@ -349,7 +350,7 @@ input[type=number]:focus,input[type=text]:focus{border-color:var(--accent);}
 </style>
 <body data-theme="dark">
 <nav>
-  <div class="nav-logo">QBAtlas</div>
+  <div class="nav-logo">QB<span>Atlas</span></div>
   <div class="nav-tabs">
     <div class="nav-tab active" onclick="showPanel('reader')">Reader</div>
     <div class="nav-tab" onclick="showPanel('clues')">Clues</div>
@@ -357,9 +358,11 @@ input[type=number]:focus,input[type=text]:focus{border-color:var(--accent);}
     <div class="nav-tab" onclick="showPanel('stats')">Stats</div>
   </div>
   <div class="nav-right">
-    <button class="theme-btn active" onclick="setTheme('dark',this)">Dark</button>
-    <button class="theme-btn" onclick="setTheme('light',this)">Light</button>
-    <button class="theme-btn" onclick="setTheme('og',this)">OG</button>
+    <select class="theme-select" id="themeSelect" onchange="setTheme(this.value)">
+      <option value="dark">Dark</option>
+      <option value="light">Light</option>
+      <option value="original">Original</option>
+    </select>
   </div>
 </nav>
 
@@ -476,10 +479,10 @@ input[type=number]:focus,input[type=text]:focus{border-color:var(--accent);}
   <div class="clue-toolbar">
     <input type="text" class="clue-search" id="clueSearch" placeholder="Search answer lines..." oninput="filterClues()">
     <button class="tool-btn" onclick="openNewCluePopup()">➕ New Clue</button>
-    <button class="tool-btn" onclick="openExportAnkiPopup()">📤 Export for Anki</button>
+    <button class="tool-btn" onclick="openExportPopup()">📤 Export</button>
     <button class="tool-btn" onclick="openImportPopup()">📥 Import</button>
-    <button class="tool-btn" onclick="downloadJSON()">⬇ Backup JSON</button>
-    <button class="tool-btn" onclick="importJSON()">⬆ Import JSON</button>
+    <button class="tool-btn" onclick="downloadJSON()">⬇ Backup</button>
+    <button class="tool-btn" onclick="importJSON()">⬆ Restore</button>
   </div>
   <div class="subject-edit-bar" id="subjectEditBar"></div>
   <div class="clue-tabs-bar" id="clueTabsBar"></div>
@@ -567,32 +570,42 @@ input[type=number]:focus,input[type=text]:focus{border-color:var(--accent);}
   </div>
 </div>
 
-<!-- ANKI EXPORT POPUP -->
-<div class="popup-overlay" id="ankiExportOverlay">
-  <div class="popup-box">
-    <div class="popup-title">Export to Anki</div>
+<!-- EXPORT POPUP -->
+<div class="popup-overlay" id="exportPopup">
+  <div class="popup-box" style="max-width:460px;width:95%;">
+    <div class="popup-title">Export Clues</div>
     <div class="export-opt">
       <label>
-        <input type="radio" name="exportMode" value="all" checked>
+        <input type="radio" name="exportType" value="anki-new" checked>
         <div>
-          <div class="export-opt-title">Export all clues</div>
-          <div class="export-opt-sub" id="exportAllSub">All clues in your database</div>
+          <div class="export-opt-title">Export new only → Anki file</div>
+          <div class="export-opt-sub" id="exportNewCount">Only clues not previously exported</div>
         </div>
       </label>
       <label>
-        <input type="radio" name="exportMode" value="new">
+        <input type="radio" name="exportType" value="anki-all">
         <div>
-          <div class="export-opt-title">Export new only</div>
-          <div class="export-opt-sub" id="exportNewSub">Only clues not previously exported</div>
+          <div class="export-opt-title">Export all → Anki file</div>
+          <div class="export-opt-sub" id="exportAllCount">All clues as a .txt Anki import file</div>
+        </div>
+      </label>
+      <label>
+        <input type="radio" name="exportType" value="clipboard">
+        <div>
+          <div class="export-opt-title">Copy to clipboard (plain text)</div>
+          <div class="export-opt-sub">ANSWER ; clue 1, clue 2 format — paste anywhere</div>
         </div>
       </label>
     </div>
     <div class="popup-btns">
-      <button class="popup-cancel" onclick="closePopup('ankiExportOverlay')">Cancel</button>
-      <button class="popup-confirm" onclick="doExportAnki()">📤 Export</button>
+      <button class="popup-cancel" onclick="closePopup('exportPopup')">Cancel</button>
+      <button class="popup-confirm" onclick="doExport()">Export</button>
     </div>
   </div>
 </div>
+
+<!-- ANKI EXPORT POPUP (kept for compat) -->
+<div class="popup-overlay" id="ankiExportOverlay" style="display:none!important"></div>
 
 <!-- IMPORT POPUP -->
 <div class="popup-overlay" id="importOverlay">
@@ -627,9 +640,9 @@ input[type=number]:focus,input[type=text]:focus{border-color:var(--accent);}
 
     <!-- SUBJECT OVERRIDE -->
     <div style="margin-top:14px;">
-      <div class="popup-field-label" style="margin-bottom:6px;">Subject <span style="color:var(--text2);font-weight:400">(optional — overrides auto-detect)</span></div>
+      <div class="popup-field-label" style="margin-bottom:6px;">Subject</div>
       <select id="importSubjectOverride" style="width:100%;background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:6px;font-size:13px;padding:8px 12px;cursor:pointer;outline:none;">
-        <option value="">Auto-detect from answer</option>
+        <option value="">Auto-detect from answer text</option>
         <option value="SCI">Science (SCI)</option>
         <option value="HIS">History (HIS)</option>
         <option value="LIT">Literature (LIT)</option>
@@ -849,7 +862,100 @@ async function updateFC(id,result){
 }
 
 // ── THEME ────────────────────────────────────────────────────────
-function setTheme(t,btn){document.body.dataset.theme=t;document.querySelectorAll('.theme-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');localStorage.setItem('qbTheme',t);}
+function setTheme(t){
+  document.body.dataset.theme=t;
+  localStorage.setItem('qbTheme',t);
+  const sel=document.getElementById('themeSelect');
+  if(sel)sel.value=t;
+}
+
+// Delegated event listeners for clue panel buttons (avoids escaping issues)
+document.addEventListener('click',function(e){
+  const editClue=e.target.closest('.edit-clue-btn');
+  if(editClue){
+    const sub=editClue.dataset.sub;
+    const ans=decodeURIComponent(editClue.dataset.ans);
+    const idx=parseInt(editClue.dataset.idx);
+    openEditCluePopup(sub,ans,idx);return;
+  }
+  const editAns=e.target.closest('.ans-edit-btn');
+  if(editAns){
+    e.stopPropagation();
+    const sub=editAns.dataset.sub;
+    const ans=decodeURIComponent(editAns.dataset.ans);
+    openEditAnsPopup(sub,ans);return;
+  }
+  const delAns=e.target.closest('.ans-del-btn');
+  if(delAns){
+    e.stopPropagation();
+    const sub=delAns.dataset.sub;
+    const ans=decodeURIComponent(delAns.dataset.ans);
+    confirmDeleteAns(sub,ans);return;
+  }
+});
+
+function openExportPopup(){
+  let total=0,newCount=0;
+  SUBS.forEach(sub=>{const data=clueCache[sub]||{};Object.values(data).forEach(e=>{e.clues.forEach(c=>{total++;if(!c.exportedAt)newCount++;});});});
+  document.getElementById('exportAllCount').textContent=`${total} clue${total!==1?'s':''} total`;
+  document.getElementById('exportNewCount').textContent=newCount>0?`${newCount} clue${newCount!==1?'s':''} not yet exported`:'No new clues since last export';
+  document.querySelector('input[name="exportType"][value="anki-new"]').checked=true;
+  document.getElementById('exportPopup').classList.add('open');
+}
+
+async function doExport(){
+  const type=document.querySelector('input[name="exportType"]:checked').value;
+  closePopup('exportPopup');
+  const now=Date.now();
+  const lines=[];const toStamp=[];
+
+  SUBS.forEach(sub=>{
+    const data=clueCache[sub]||{};
+    Object.entries(data).forEach(([ans,e])=>{
+      e.clues.forEach((c,ci)=>{
+        if(type==='anki-new'&&c.exportedAt)return;
+        if(type==='clipboard'){
+          // Group by answer for clipboard format — handled below
+        } else {
+          lines.push(c.text+'\t'+ans);
+        }
+        toStamp.push({sub,ans,ci});
+      });
+    });
+  });
+
+  if(type==='clipboard'){
+    // Build ANSWER ; clue1, clue2 format
+    const byAns={};
+    SUBS.forEach(sub=>{const data=clueCache[sub]||{};Object.entries(data).forEach(([ans,e])=>{if(!byAns[ans])byAns[ans]=[];e.clues.forEach(c=>byAns[ans].push(c.text));});});
+    const text=Object.entries(byAns).map(([ans,clues])=>`${ans} ; ${clues.join(', ')}`).join('\n');
+    if(!text){showToast('No clues to copy');return;}
+    navigator.clipboard.writeText(text).then(()=>showToast(`Copied ${Object.keys(byAns).length} answer lines to clipboard`));
+    return;
+  }
+
+  if(!lines.length){showToast(type==='anki-new'?'No new clues to export':'No clues to export');return;}
+
+  // Stamp exportedAt
+  const saved=new Set();
+  for(const {sub,ans,ci} of toStamp){
+    clueCache[sub][ans].clues[ci].exportedAt=now;
+    const key=sub+'||'+ans;
+    if(!saved.has(key)){await saveClueRec(sub,ans);saved.add(key);}
+  }
+
+  const header='#separator:Tab\n#html:false\n#notetype:Basic\n#deck:QB Study\n';
+  const blob=new Blob([header+lines.join('\n')],{type:'text/plain'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=`qbatlas_${type==='anki-new'?'new_':''}export_${new Date().toISOString().slice(0,10)}.txt`;
+  a.click();
+  showToast(`Exported ${lines.length} card${lines.length!==1?'s':''}`);
+}
+
+// Keep old function names as aliases
+function openExportAnkiPopup(){openExportPopup();}
+async function doExportAnki(){await doExport();}
 
 // ── PANELS ───────────────────────────────────────────────────────
 function showPanel(name){
@@ -1645,21 +1751,19 @@ function renderSubClues(sub,filter){
     const sortedClues=[...e.clues].sort((a,b)=>a.text.localeCompare(b.text));
     const rows=sortedClues.map((c,ci)=>{
       const origIdx=e.clues.indexOf(c);
-      const safeAns=ans.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
       return`<div class="clue-row">
         <span class="clue-text-cell">${c.text}</span>
         <span class="clue-miss ${c.misses>0?'cm-has':'cm-no'}">${c.misses}</span>
-        <button class="edit-clue-btn" onclick="openEditCluePopup('${sub}','${safeAns}',${origIdx})" title="Edit clue">✏️</button>
+        <button class="edit-clue-btn" data-sub="${sub}" data-ans="${encodeURIComponent(ans)}" data-idx="${origIdx}" title="Edit clue">✏️</button>
       </div>`;
     }).join('');
-    const safeAns=ans.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
     return`<div class="ans-section"><div class="ans-header" onclick="toggleAns(this)">
       <span class="ans-name">${ans}</span>
       <div style="display:flex;align-items:center;gap:8px;">
         <div class="ans-stats"><span>${e.clues.length} clues</span><span class="ans-total-miss">Total misses: ${e.totalMisses||0}</span></div>
         <div class="ans-header-actions" onclick="event.stopPropagation()">
-          <button class="ans-edit-btn" onclick="openEditAnsPopup('${sub}','${safeAns}')" title="Edit answer line">✏️</button>
-          <button class="ans-del-btn" onclick="confirmDeleteAns('${sub}','${safeAns}')" title="Delete answer line">🗑</button>
+          <button class="ans-edit-btn" data-sub="${sub}" data-ans="${encodeURIComponent(ans)}" title="Edit answer line">✏️</button>
+          <button class="ans-del-btn" data-sub="${sub}" data-ans="${encodeURIComponent(ans)}" title="Delete answer line">🗑</button>
         </div>
       </div>
     </div><div class="ans-clues">${rows}</div></div>`;
@@ -2158,7 +2262,8 @@ async function confirmNewClue(){
 (async()=>{
   const th=localStorage.getItem('qbTheme')||'dark';
   document.body.dataset.theme=th;
-  document.querySelectorAll('.theme-btn').forEach(b=>{b.classList.toggle('active',b.textContent.toLowerCase()===th);});
+  const sel=document.getElementById('themeSelect');
+  if(sel)sel.value=th;
   await openDB();await loadClues();await loadFC();await backfillFC();await loadResults();await loadPlog();
 })();
 // ── PACKET LOG ────────────────────────────────────────────────────
