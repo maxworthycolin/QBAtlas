@@ -1761,7 +1761,7 @@ function renderSubClues(sub,filter){
       <span class="ans-name">${ans}</span>
       <div style="display:flex;align-items:center;gap:8px;">
         <div class="ans-stats"><span>${e.clues.length} clues</span><span class="ans-total-miss">Total misses: ${e.totalMisses||0}</span></div>
-        <div class="ans-header-actions" onclick="event.stopPropagation()">
+        <div class="ans-header-actions">
           <button class="ans-edit-btn" data-sub="${sub}" data-ans="${encodeURIComponent(ans)}" title="Edit answer line">✏️</button>
           <button class="ans-del-btn" data-sub="${sub}" data-ans="${encodeURIComponent(ans)}" title="Delete answer line">🗑</button>
         </div>
@@ -1776,7 +1776,11 @@ function switchClueTab(sub,el){
   el.classList.add('active');
   document.getElementById('cp-'+sub).classList.add('active');
 }
-function toggleAns(el){el.nextElementSibling.classList.toggle('open');}
+function toggleAns(el){
+  // Don't toggle if clicking edit/delete buttons
+  if(event&&(event.target.closest('.ans-edit-btn')||event.target.closest('.ans-del-btn')))return;
+  el.nextElementSibling.classList.toggle('open');
+}
 function filterClues(){
   const q=document.getElementById('clueSearch').value;
   const active=SUBS.filter(s=>clueCache[s]&&Object.keys(clueCache[s]).length>0);
